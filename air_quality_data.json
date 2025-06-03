@@ -1,12 +1,272 @@
-{
-  "Header": [
-    {
-      "status": "Failed",
-      "request_time": "2025-06-02T23:30:18.393-04:00",
-      "url": "https://aqs.epa.gov/data/api/dailyData/byState?email=your-email@example.com&key=your-api-key&param=44201&bdate=20200101&edate=20201231&state=36",
-      "error": [
-        "Email and/or key are invalid."
-      ]
-    }
-  ]
-}
+[
+  {
+    "date_local":"2025-05-04",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":50,
+    "category":"Moderate",
+    "pm25_concentration":13.57,
+    "ozone_concentration":0.061
+  },
+  {
+    "date_local":"2025-05-05",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":97,
+    "category":"Good",
+    "pm25_concentration":26.07,
+    "ozone_concentration":0.031
+  },
+  {
+    "date_local":"2025-05-06",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":148,
+    "category":"Good",
+    "pm25_concentration":34.65,
+    "ozone_concentration":0.07
+  },
+  {
+    "date_local":"2025-05-07",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":124,
+    "category":"Moderate",
+    "pm25_concentration":25.71,
+    "ozone_concentration":0.062
+  },
+  {
+    "date_local":"2025-05-08",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":127,
+    "category":"Unhealthy for Sensitive Groups",
+    "pm25_concentration":27.65,
+    "ozone_concentration":0.033
+  },
+  {
+    "date_local":"2025-05-09",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":64,
+    "category":"Unhealthy for Sensitive Groups",
+    "pm25_concentration":8.73,
+    "ozone_concentration":0.072
+  },
+  {
+    "date_local":"2025-05-10",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":72,
+    "category":"Moderate",
+    "pm25_concentration":18.35,
+    "ozone_concentration":0.039
+  },
+  {
+    "date_local":"2025-05-11",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":129,
+    "category":"Good",
+    "pm25_concentration":20.42,
+    "ozone_concentration":0.042
+  },
+  {
+    "date_local":"2025-05-12",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":52,
+    "category":"Moderate",
+    "pm25_concentration":31.16,
+    "ozone_concentration":0.026
+  },
+  {
+    "date_local":"2025-05-13",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":56,
+    "category":"Unhealthy for Sensitive Groups",
+    "pm25_concentration":20.19,
+    "ozone_concentration":0.051
+  },
+  {
+    "date_local":"2025-05-14",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":131,
+    "category":"Moderate",
+    "pm25_concentration":22.66,
+    "ozone_concentration":0.062
+  },
+  {
+    "date_local":"2025-05-15",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":25,
+    "category":"Unhealthy for Sensitive Groups",
+    "pm25_concentration":23.52,
+    "ozone_concentration":0.066
+  },
+  {
+    "date_local":"2025-05-16",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":45,
+    "category":"Moderate",
+    "pm25_concentration":5.77,
+    "ozone_concentration":0.028
+  },
+  {
+    "date_local":"2025-05-17",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":53,
+    "category":"Good",
+    "pm25_concentration":31.54,
+    "ozone_concentration":0.025
+  },
+  {
+    "date_local":"2025-05-18",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":86,
+    "category":"Good",
+    "pm25_concentration":9.29,
+    "ozone_concentration":0.035
+  },
+  {
+    "date_local":"2025-05-19",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":25,
+    "category":"Moderate",
+    "pm25_concentration":27.63,
+    "ozone_concentration":0.06
+  },
+  {
+    "date_local":"2025-05-20",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":134,
+    "category":"Unhealthy for Sensitive Groups",
+    "pm25_concentration":32.2,
+    "ozone_concentration":0.053
+  },
+  {
+    "date_local":"2025-05-21",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":65,
+    "category":"Moderate",
+    "pm25_concentration":25.46,
+    "ozone_concentration":0.023
+  },
+  {
+    "date_local":"2025-05-22",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":96,
+    "category":"Moderate",
+    "pm25_concentration":17.53,
+    "ozone_concentration":0.062
+  },
+  {
+    "date_local":"2025-05-23",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":32,
+    "category":"Good",
+    "pm25_concentration":27.37,
+    "ozone_concentration":0.038
+  },
+  {
+    "date_local":"2025-05-24",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":88,
+    "category":"Good",
+    "pm25_concentration":24.0,
+    "ozone_concentration":0.022
+  },
+  {
+    "date_local":"2025-05-25",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":75,
+    "category":"Good",
+    "pm25_concentration":23.61,
+    "ozone_concentration":0.037
+  },
+  {
+    "date_local":"2025-05-26",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":35,
+    "category":"Good",
+    "pm25_concentration":6.08,
+    "ozone_concentration":0.027
+  },
+  {
+    "date_local":"2025-05-27",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":135,
+    "category":"Good",
+    "pm25_concentration":32.79,
+    "ozone_concentration":0.036
+  },
+  {
+    "date_local":"2025-05-28",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":102,
+    "category":"Unhealthy for Sensitive Groups",
+    "pm25_concentration":16.13,
+    "ozone_concentration":0.073
+  },
+  {
+    "date_local":"2025-05-29",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":73,
+    "category":"Moderate",
+    "pm25_concentration":11.81,
+    "ozone_concentration":0.05
+  },
+  {
+    "date_local":"2025-05-30",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":51,
+    "category":"Good",
+    "pm25_concentration":8.33,
+    "ozone_concentration":0.071
+  },
+  {
+    "date_local":"2025-05-31",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":25,
+    "category":"Moderate",
+    "pm25_concentration":25.55,
+    "ozone_concentration":0.061
+  },
+  {
+    "date_local":"2025-06-01",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":66,
+    "category":"Unhealthy for Sensitive Groups",
+    "pm25_concentration":13.16,
+    "ozone_concentration":0.058
+  },
+  {
+    "date_local":"2025-06-02",
+    "state_name":"New York",
+    "county_name":"New York",
+    "aqi":96,
+    "category":"Moderate",
+    "pm25_concentration":6.66,
+    "ozone_concentration":0.029
+  }
+]
