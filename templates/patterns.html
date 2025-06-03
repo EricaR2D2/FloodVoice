@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+
+{% block title %}Pattern Analysis - Public Health MVP{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-search me-2 text-primary"></i>
+        Pattern Analysis & Alerts
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshPatterns()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-sm btn-primary" onclick="runPatternDetection()">
+                <i class="fas fa-search"></i> Run Detection
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Controls -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-filter me-2"></i>
+                    Filter & Search
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="patternTypeFilter" class="form-label">Pattern Type</label>
+                        <select class="form-select" id="patternTypeFilter" onchange="filterPatterns()">
+                            <option value="">All Types</option>
+                            <option value="spike">Spikes</option>
+                            <option value="drop">Drops</option>
+                            <option value="consistently_high">Consistently High</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="zipCodeFilter" class="form-label">ZIP Code</label>
+                        <select class="form-select" id="zipCodeFilter" onchange="filterPatterns()">
+                            <option value="">All ZIP Codes</option>
+                            <!-- Will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="dateRangeFilter" class="form-label">Date Range</label>
+                        <select class="form-select" id="dateRangeFilter" onchange="filterPatterns()">
+                            <option value="7">Last 7 days</option>
+                            <option value="14">Last 14 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="">All time</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="confidenceFilter" class="form-label">Min Confidence</label>
+                        <select class="form-select" id="confidenceFilter" onchange="filterPatterns()">
+                            <option value="0">Any confidence</option>
+                            <option value="50">50%+</option>
+                            <option value="70">70%+</option>
+                            <option value="90">90%+</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pattern Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Spike Patterns
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="spikeCount">-</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-arrow-up fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Drop Patterns
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="dropCount">-</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-arrow-down fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            High Patterns
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="highCount">-</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Avg Confidence
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="avgConfidence">-</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pattern List -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-list me-2"></i>
+                    Detected Patterns
+                </h6>
+                <span class="badge bg-primary" id="patternCount">Loading...</span>
+            </div>
+            <div class="card-body">
+                <div id="patternsList">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin fa-2x text-gray-300"></i>
+                        <p class="text-gray-500 mt-2">Loading patterns...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .border-left-danger { border-left: 0.25rem solid #e74a3b !important; }
+    .border-left-info { border-left: 0.25rem solid #36b9cc !important; }
+    .border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
+    .border-left-success { border-left: 0.25rem solid #1cc88a !important; }
+    
+    .pattern-card {
+        border-left: 4px solid;
+        margin-bottom: 1rem;
+        transition: transform 0.2s ease;
+    }
+    .pattern-card:hover {
+        transform: translateX(5px);
+    }
+    .pattern-spike { border-left-color: #e74a3b; }
+    .pattern-drop { border-left-color: #36b9cc; }
+    .pattern-high { border-left-color: #f6c23e; }
+    
+    .confidence-bar {
+        height: 6px;
+        border-radius: 3px;
+        background-color: #e9ecef;
+        overflow: hidden;
+    }
+    .confidence-fill {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    .confidence-high { background-color: #28a745; }
+    .confidence-medium { background-color: #ffc107; }
+    .confidence-low { background-color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allPatterns = [];
+let filteredPatterns = [];
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadPatterns();
+});
+
+function loadPatterns() {
+    fetch('/api/patterns?limit=100')
+        .then(response => response.json())
+        .then(patterns => {
+            allPatterns = patterns;
+            populateFilters();
+            filterPatterns();
+            updateStatistics();
+        })
+        .catch(error => {
+            console.error('Error loading patterns:', error);
+            showNotification('Error loading patterns', 'danger');
+        });
+}
+
+function populateFilters() {
+    // Populate ZIP code filter
+    const zipCodes = [...new Set(allPatterns.map(p => p.zip_code))].sort();
+    const zipSelect = document.getElementById('zipCodeFilter');
+    zipSelect.innerHTML = '<option value="">All ZIP Codes</option>';
+    zipCodes.forEach(zip => {
+        zipSelect.innerHTML += `<option value="${zip}">${zip}</option>`;
+    });
+}
+
+function filterPatterns() {
+    const typeFilter = document.getElementById('patternTypeFilter').value;
+    const zipFilter = document.getElementById('zipCodeFilter').value;
+    const dateFilter = document.getElementById('dateRangeFilter').value;
+    const confidenceFilter = parseFloat(document.getElementById('confidenceFilter').value);
+    
+    filteredPatterns = allPatterns.filter(pattern => {
+        // Type filter
+        if (typeFilter && pattern.pattern_type !== typeFilter) return false;
+        
+        // ZIP filter
+        if (zipFilter && pattern.zip_code !== zipFilter) return false;
+        
+        // Date filter
+        if (dateFilter) {
+            const patternDate = new Date(pattern.date);
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - parseInt(dateFilter));
+            if (patternDate < cutoffDate) return false;
+        }
+        
+        // Confidence filter
+        if (confidenceFilter && pattern.confidence_score < confidenceFilter) return false;
+        
+        return true;
+    });
+    
+    displayPatterns();
+    updateStatistics();
+}
+
+function displayPatterns() {
+    const patternsDiv = document.getElementById('patternsList');
+    const countBadge = document.getElementById('patternCount');
+    
+    countBadge.textContent = `${filteredPatterns.length} patterns`;
+    
+    if (filteredPatterns.length === 0) {
+        patternsDiv.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-search fa-3x mb-3"></i>
+                <h5>No patterns found</h5>
+                <p>Try adjusting your filters or run pattern detection to find new patterns.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    filteredPatterns.forEach(pattern => {
+        const patternClass = getPatternClass(pattern.pattern_type);
+        const icon = getPatternIcon(pattern.pattern_type);
+        const confidenceClass = getConfidenceClass(pattern.confidence_score);
+        
+        html += `
+            <div class="card pattern-card ${patternClass} mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6 class="card-title mb-2">
+                                <i class="${icon} me-2"></i>
+                                ${pattern.pattern_type.replace('_', ' ').toUpperCase()} in ZIP ${pattern.zip_code}
+                            </h6>
+                            <p class="card-text mb-2">
+                                <strong>${pattern.hospital_name}</strong> - ${formatDate(pattern.date)}
+                            </p>
+                            <p class="card-text mb-2">
+                                <span class="badge bg-secondary me-2">
+                                    Current: ${pattern.current_value} visits
+                                </span>
+                                <span class="badge bg-light text-dark me-2">
+                                    Average: ${pattern.rolling_mean.toFixed(1)}
+                                </span>
+                                <span class="badge ${pattern.percentage_change > 0 ? 'bg-danger' : 'bg-info'}">
+                                    ${pattern.percentage_change > 0 ? '+' : ''}${pattern.percentage_change.toFixed(1)}%
+                                </span>
+                            </p>
+                            <div class="card-text">
+                                <small class="text-muted">
+                                    <strong>AI Analysis:</strong> ${pattern.ai_explanation}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="mb-2">
+                                <small class="text-muted">Confidence Score</small>
+                                <div class="h5 mb-1">${pattern.confidence_score.toFixed(0)}%</div>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill ${confidenceClass}" 
+                                         style="width: ${pattern.confidence_score}%"></div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    Detected: ${formatDateTime(pattern.detection_timestamp)}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    patternsDiv.innerHTML = html;
+}
+
+function updateStatistics() {
+    const spikeCount = filteredPatterns.filter(p => p.pattern_type === 'spike').length;
+    const dropCount = filteredPatterns.filter(p => p.pattern_type === 'drop').length;
+    const highCount = filteredPatterns.filter(p => p.pattern_type === 'consistently_high').length;
+    
+    const avgConfidence = filteredPatterns.length > 0 
+        ? filteredPatterns.reduce((sum, p) => sum + p.confidence_score, 0) / filteredPatterns.length
+        : 0;
+    
+    document.getElementById('spikeCount').textContent = spikeCount;
+    document.getElementById('dropCount').textContent = dropCount;
+    document.getElementById('highCount').textContent = highCount;
+    document.getElementById('avgConfidence').textContent = avgConfidence.toFixed(0) + '%';
+}
+
+function getPatternClass(patternType) {
+    switch(patternType) {
+        case 'spike': return 'pattern-spike';
+        case 'drop': return 'pattern-drop';
+        case 'consistently_high': return 'pattern-high';
+        default: return 'pattern-spike';
+    }
+}
+
+function getPatternIcon(patternType) {
+    switch(patternType) {
+        case 'spike': return 'fas fa-arrow-up text-danger';
+        case 'drop': return 'fas fa-arrow-down text-info';
+        case 'consistently_high': return 'fas fa-exclamation-triangle text-warning';
+        default: return 'fas fa-chart-line';
+    }
+}
+
+function getConfidenceClass(confidence) {
+    if (confidence >= 70) return 'confidence-high';
+    if (confidence >= 40) return 'confidence-medium';
+    return 'confidence-low';
+}
+
+function refreshPatterns() {
+    showNotification('Refreshing patterns...', 'info');
+    loadPatterns();
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        weekday: 'short',
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+    });
+}
+
+function formatDateTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+</script>
+{% endblock %}

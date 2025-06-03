@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Public Health MVP Dashboard{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255,255,255,0.1);
+            transform: translateX(5px);
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-online { background-color: #28a745; }
+        .status-offline { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; }
+        .pattern-badge {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .alert-item {
+            border-left: 4px solid;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+        .alert-spike { border-left-color: #dc3545; background-color: #f8d7da; }
+        .alert-drop { border-left-color: #0dcaf0; background-color: #d1ecf1; }
+        .alert-high { border-left-color: #ffc107; background-color: #fff3cd; }
+        .navbar-brand {
+            font-weight: bold;
+            color: #667eea !important;
+        }
+        .real-time-indicator {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-heartbeat me-2"></i>
+                NYC Public Health MVP
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text">
+                    <span class="status-indicator real-time-indicator" id="connectionStatus"></span>
+                    <span id="connectionText">Connecting...</span>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="/">
+                                <i class="fas fa-tachometer-alt me-2"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'patterns_page' %}active{% endif %}" href="/patterns">
+                                <i class="fas fa-search me-2"></i>
+                                Pattern Analysis
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'settings_page' %}active{% endif %}" href="/settings">
+                                <i class="fas fa-cog me-2"></i>
+                                Alert Settings
+                            </a>
+                        </li>
+                        <li class="nav-item mt-3">
+                            <a class="nav-link" href="#" onclick="runPatternDetection()">
+                                <i class="fas fa-play me-2"></i>
+                                Run Detection
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <hr class="my-3" style="border-color: rgba(255,255,255,0.3);">
+                    
+                    <div class="px-3">
+                        <h6 class="text-white-50 text-uppercase">Data Sources</h6>
+                        <div id="dataSourceStatus">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="pt-3 pb-2 mb-3">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Base JavaScript -->
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        
+        // Connection status handling
+        socket.on('connect', function() {
+            document.getElementById('connectionStatus').className = 'status-indicator status-online real-time-indicator';
+            document.getElementById('connectionText').textContent = 'Live';
+        });
+        
+        socket.on('disconnect', function() {
+            document.getElementById('connectionStatus').className = 'status-indicator status-offline';
+            document.getElementById('connectionText').textContent = 'Disconnected';
+        });
+        
+        // Real-time updates
+        socket.on('patterns_updated', function(data) {
+            showNotification(`${data.patterns_found} new patterns detected!`, 'success');
+            if (typeof updateDashboard === 'function') {
+                updateDashboard();
+            }
+        });
+        
+        socket.on('dashboard_updated', function(data) {
+            if (typeof updateDashboard === 'function') {
+                updateDashboard();
+            }
+        });
+        
+        // Utility functions
+        function showNotification(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+        
+        function runPatternDetection() {
+            showNotification('Running pattern detection...', 'info');
+            
+            fetch('/api/run-detection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification(data.message, 'success');
+            })
+            .catch(error => {
+                showNotification('Error running pattern detection', 'danger');
+                console.error('Error:', error);
+            });
+        }
+        
+        function updateDataSourceStatus() {
+            fetch('/api/summary')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('dataSourceStatus');
+                    if (statusDiv) {
+                        let html = '';
+                        for (const [source, status] of Object.entries(data.data_sources)) {
+                            const statusClass = status ? 'status-online' : 'status-offline';
+                            const displayName = source.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            html += `
+                                <div class="mb-2">
+                                    <span class="status-indicator ${statusClass}"></span>
+                                    <small class="text-white-50">${displayName}</small>
+                                </div>
+                            `;
+                        }
+                        statusDiv.innerHTML = html;
+                    }
+                })
+                .catch(error => console.error('Error updating data source status:', error));
+        }
+        
+        // Initialize data source status
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDataSourceStatus();
+            // Update every 30 seconds
+            setInterval(updateDataSourceStatus, 30000);
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

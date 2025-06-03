@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Public Health MVP{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tachometer-alt me-2 text-primary"></i>
+        Public Health Dashboard
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="updateDashboard()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-sm btn-primary" onclick="runPatternDetection()">
+                <i class="fas fa-search"></i> Detect Patterns
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Hospital Records
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRecords">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-hospital fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Patterns Detected
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalPatterns">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Latest Data
+                        </div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800" id="latestData">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Last Update
+                        </div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800" id="lastUpdate">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clock fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <!-- Hospital Data Time Series -->
+    <div class="col-xl-8 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-area me-2"></i>
+                    ER Respiratory Visits Over Time
+                </h6>
+                <div class="dropdown no-arrow">
+                    <select class="form-select form-select-sm" id="timeRangeSelect" onchange="updateCharts()">
+                        <option value="7">Last 7 days</option>
+                        <option value="14">Last 14 days</option>
+                        <option value="30" selected>Last 30 days</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-area">
+                    <canvas id="hospitalChart" width="100%" height="40"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pattern Distribution -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Recent Pattern Types
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-pie pt-4 pb-2">
+                    <canvas id="patternChart" width="100%" height="50"></canvas>
+                </div>
+                <div class="mt-4 text-center small" id="patternLegend">
+                    <!-- Pattern legend will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Alerts -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Recent Pattern Alerts
+                </h6>
+            </div>
+            <div class="card-body">
+                <div id="recentAlerts">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin fa-2x text-gray-300"></i>
+                        <p class="text-gray-500 mt-2">Loading recent alerts...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .border-left-primary { border-left: 0.25rem solid #4e73df !important; }
+    .border-left-success { border-left: 0.25rem solid #1cc88a !important; }
+    .border-left-info { border-left: 0.25rem solid #36b9cc !important; }
+    .border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
+    .text-gray-300 { color: #dddfeb !important; }
+    .text-gray-500 { color: #b7b9cc !important; }
+    .text-gray-800 { color: #5a5c69 !important; }
+    .chart-area { position: relative; height: 320px; width: 100%; }
+    .chart-pie { position: relative; height: 245px; width: 100%; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let hospitalChart = null;
+let patternChart = null;
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    updateDashboard();
+    initializeCharts();
+});
+
+function updateDashboard() {
+    updateSummaryCards();
+    updateCharts();
+    updateRecentAlerts();
+}
+
+function updateSummaryCards() {
+    fetch('/api/summary')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('totalRecords').textContent = data.total_hospital_records.toLocaleString();
+            document.getElementById('totalPatterns').textContent = data.total_patterns_detected.toLocaleString();
+            document.getElementById('latestData').textContent = formatDate(data.latest_data_date);
+            document.getElementById('lastUpdate').textContent = formatTime(data.last_update);
+        })
+        .catch(error => {
+            console.error('Error updating summary cards:', error);
+            showNotification('Error loading dashboard data', 'danger');
+        });
+}
+
+function initializeCharts() {
+    // Initialize hospital data chart
+    const hospitalCtx = document.getElementById('hospitalChart').getContext('2d');
+    hospitalChart = new Chart(hospitalCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Total ER Respiratory Visits',
+                data: [],
+                borderColor: '#4e73df',
+                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Visits'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+
+    // Initialize pattern distribution chart
+    const patternCtx = document.getElementById('patternChart').getContext('2d');
+    patternChart = new Chart(patternCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: ['#e74a3b', '#f39c12', '#3498db', '#2ecc71'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function updateCharts() {
+    const days = document.getElementById('timeRangeSelect').value;
+    
+    fetch(`/api/hospital-data?days=${days}`)
+        .then(response => response.json())
+        .then(data => {
+            // Update hospital data chart
+            const labels = data.daily_totals.map(item => formatDate(item.date));
+            const values = data.daily_totals.map(item => item.er_visits_respiratory);
+            
+            hospitalChart.data.labels = labels;
+            hospitalChart.data.datasets[0].data = values;
+            hospitalChart.update();
+        })
+        .catch(error => {
+            console.error('Error updating hospital chart:', error);
+        });
+    
+    // Update pattern chart
+    fetch('/api/summary')
+        .then(response => response.json())
+        .then(data => {
+            const patterns = data.recent_patterns;
+            if (patterns.length > 0) {
+                const labels = patterns.map(p => p.pattern_type.replace('_', ' ').toUpperCase());
+                const values = patterns.map(p => p.count);
+                
+                patternChart.data.labels = labels;
+                patternChart.data.datasets[0].data = values;
+                patternChart.update();
+                
+                // Update legend
+                updatePatternLegend(patterns);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating pattern chart:', error);
+        });
+}
+
+function updatePatternLegend(patterns) {
+    const colors = ['#e74a3b', '#f39c12', '#3498db', '#2ecc71'];
+    let legendHtml = '';
+    
+    patterns.forEach((pattern, index) => {
+        const color = colors[index % colors.length];
+        legendHtml += `
+            <span class="me-3">
+                <i class="fas fa-circle" style="color: ${color}"></i>
+                ${pattern.pattern_type.replace('_', ' ').toUpperCase()}: ${pattern.count}
+            </span>
+        `;
+    });
+    
+    document.getElementById('patternLegend').innerHTML = legendHtml;
+}
+
+function updateRecentAlerts() {
+    fetch('/api/patterns?limit=5')
+        .then(response => response.json())
+        .then(patterns => {
+            const alertsDiv = document.getElementById('recentAlerts');
+            
+            if (patterns.length === 0) {
+                alertsDiv.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <p>No recent pattern alerts</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let alertsHtml = '';
+            patterns.forEach(pattern => {
+                const alertClass = getAlertClass(pattern.pattern_type);
+                const icon = getPatternIcon(pattern.pattern_type);
+                
+                alertsHtml += `
+                    <div class="alert-item ${alertClass}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    <i class="${icon} me-2"></i>
+                                    ${pattern.pattern_type.replace('_', ' ').toUpperCase()} in ZIP ${pattern.zip_code}
+                                </h6>
+                                <p class="mb-1">
+                                    <strong>${pattern.hospital_name}</strong> - ${formatDate(pattern.date)}
+                                </p>
+                                <p class="mb-1">
+                                    Current: ${pattern.current_value} visits 
+                                    (${pattern.percentage_change > 0 ? '+' : ''}${pattern.percentage_change.toFixed(1)}% from average)
+                                </p>
+                                <small class="text-muted">
+                                    ${pattern.ai_explanation.substring(0, 150)}...
+                                </small>
+                            </div>
+                            <span class="badge bg-secondary ms-2">
+                                ${pattern.confidence_score.toFixed(0)}% confidence
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            alertsDiv.innerHTML = alertsHtml;
+        })
+        .catch(error => {
+            console.error('Error updating recent alerts:', error);
+            document.getElementById('recentAlerts').innerHTML = `
+                <div class="text-center text-danger">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <p>Error loading recent alerts</p>
+                </div>
+            `;
+        });
+}
+
+function getAlertClass(patternType) {
+    switch(patternType) {
+        case 'spike': return 'alert-spike';
+        case 'drop': return 'alert-drop';
+        case 'consistently_high': return 'alert-high';
+        default: return 'alert-spike';
+    }
+}
+
+function getPatternIcon(patternType) {
+    switch(patternType) {
+        case 'spike': return 'fas fa-arrow-up';
+        case 'drop': return 'fas fa-arrow-down';
+        case 'consistently_high': return 'fas fa-exclamation-triangle';
+        default: return 'fas fa-chart-line';
+    }
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+    });
+}
+
+function formatTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true
+    });
+}
+</script>
+{% endblock %}
