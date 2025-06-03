@@ -1,0 +1,12 @@
+{
+  "Header": [
+    {
+      "status": "Failed",
+      "request_time": "2025-06-02T23:30:18.393-04:00",
+      "url": "https://aqs.epa.gov/data/api/dailyData/byState?email=your-email@example.com&key=your-api-key&param=44201&bdate=20200101&edate=20201231&state=36",
+      "error": [
+        "Email and/or key are invalid."
+      ]
+    }
+  ]
+}
