@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Alert Details - Public Health MVP{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+        Alert Details
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Summary Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bell me-2"></i>
+                    {{ pattern.pattern_type.replace('_', ' ').title() }} Alert in ZIP {{ pattern.zip_code }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Alert Information</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Date:</strong></td>
+                                <td>{{ pattern.date }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ZIP Code:</strong></td>
+                                <td><span class="badge bg-secondary">{{ pattern.zip_code }}</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Hospital:</strong></td>
+                                <td>{{ pattern.hospital_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Pattern Type:</strong></td>
+                                <td>
+                                    {% if pattern.pattern_type == 'spike' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-arrow-up me-1"></i>Spike
+                                        </span>
+                                    {% elif pattern.pattern_type == 'drop' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-arrow-down me-1"></i>Drop
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Consistently High
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Metrics</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Current Visits:</strong></td>
+                                <td><span class="h5 text-primary">{{ pattern.current_value }}</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Rolling Average:</strong></td>
+                                <td>{{ "%.1f"|format(pattern.rolling_mean) }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Change from Average:</strong></td>
+                                <td>
+                                    {% if pattern.percentage_change > 0 %}
+                                        <span class="text-danger">
+                                            <i class="fas fa-arrow-up me-1"></i>+{{ "%.1f"|format(pattern.percentage_change) }}%
+                                        </span>
+                                    {% else %}
+                                        <span class="text-info">
+                                            <i class="fas fa-arrow-down me-1"></i>{{ "%.1f"|format(pattern.percentage_change) }}%
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Confidence Score:</strong></td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" role="progressbar"
+                                             style="width: {{ pattern.confidence_score }}%">
+                                            {{ "%.0f"|format(pattern.confidence_score) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Geographic Context Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-map-marked-alt me-2 text-primary"></i>
+                    Geographic Context
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Interactive map showing the location of the alert in ZIP code {{ pattern.zip_code }}. 
+                    The highlighted area represents the affected ZIP code boundary.
+                </p>
+                <div class="map-container" style="height: 500px; border: 1px solid #dee2e6; border-radius: 0.375rem;">
+                    {{ map_html | safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Analysis Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-brain me-2 text-success"></i>
+                    AI Analysis & Explanation
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-light border-start border-success border-4">
+                    <p class="mb-0">{{ pattern.ai_explanation }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contextual Data Section -->
+{% if pattern.context_data %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-database me-2 text-info"></i>
+                    Contextual Health Data
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if pattern.context_data.air_quality %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-primary">Air Quality</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>AQI:</strong> {{ pattern.context_data.air_quality.aqi }}</li>
+                            <li><strong>PM2.5:</strong> {{ pattern.context_data.air_quality.pm25 }} μg/m³</li>
+                            <li><strong>Ozone:</strong> {{ pattern.context_data.air_quality.ozone }} ppm</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    {% if pattern.context_data.covid_data %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-primary">COVID-19 Data</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Cases:</strong> {{ pattern.context_data.covid_data.case_count }}</li>
+                            <li><strong>Hospitalizations:</strong> {{ pattern.context_data.covid_data.hospitalized_count }}</li>
+                            <li><strong>Deaths:</strong> {{ pattern.context_data.covid_data.death_count }}</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    {% if pattern.context_data.cdc_ili %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-primary">CDC ILI Data</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>ILI Percentage:</strong> {{ pattern.context_data.cdc_ili.weighted_ili }}%</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Detection Metadata -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2 text-secondary"></i>
+                    Detection Metadata
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Alert ID:</strong> {{ pattern.id }}</p>
+                        <p><strong>Detection Timestamp:</strong> {{ pattern.detection_timestamp }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Data Source:</strong> Hospital Emergency Department Visits</p>
+                        <p><strong>Analysis Method:</strong> Rolling Average Pattern Detection</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add any additional JavaScript for the alert detail page here
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure map is properly sized
+    setTimeout(function() {
+        window.dispatchEvent(new Event('resize'));
+    }, 100);
+});
+</script>
+{% endblock %}

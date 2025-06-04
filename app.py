@@ -6,6 +6,8 @@ import json
 from datetime import datetime, timedelta
 import threading
 import time
+import folium
+import os
 from phase2_pattern_detection import PatternDetector
 from forecasting_engine import ForecastingEngine
 
@@ -214,6 +216,125 @@ class DashboardManager:
             print(f"Error running pattern detection: {e}")
             return 0
 
+def create_alert_map(zip_code, pattern_data):
+    """Create an interactive Folium map for the alert location."""
+    try:
+        # Load NYC ZIP codes GeoJSON
+        geojson_path = os.path.join('static', 'nyc_zipcodes.geojson')
+        with open(geojson_path, 'r') as f:
+            nyc_zipcodes = json.load(f)
+
+        # Create map centered on NYC
+        nyc_center = [40.7128, -73.9352]  # NYC coordinates
+        m = folium.Map(location=nyc_center, zoom_start=10)
+
+        # Style function for ZIP codes
+        def style_function(feature):
+            zip_code_feature = feature['properties']['MODZCTA']
+            if zip_code_feature == str(zip_code):
+                # Highlight the alert ZIP code
+                return {
+                    'fillColor': '#ff7f0e',
+                    'color': '#d62728',
+                    'weight': 3,
+                    'fillOpacity': 0.7,
+                    'opacity': 1.0
+                }
+            else:
+                # Default style for other ZIP codes
+                return {
+                    'fillColor': '#1f77b4',
+                    'color': '#aec7e8',
+                    'weight': 1,
+                    'fillOpacity': 0.1,
+                    'opacity': 0.3
+                }
+
+        # Add GeoJSON layer with styling
+        folium.GeoJson(
+            nyc_zipcodes,
+            style_function=style_function,
+            popup=folium.GeoJsonPopup(
+                fields=['MODZCTA', 'label'],
+                aliases=['ZIP Code:', 'Area:'],
+                localize=True,
+                labels=True,
+                style="background-color: white;",
+            ),
+            tooltip=folium.GeoJsonTooltip(
+                fields=['MODZCTA'],
+                aliases=['ZIP Code:'],
+                localize=True,
+                sticky=True,
+                labels=True,
+                style="""
+                    background-color: #F0EFEF;
+                    border: 2px solid black;
+                    border-radius: 3px;
+                    box-shadow: 3px;
+                """,
+                max_width=800,
+            )
+        ).add_to(m)
+
+        # Find the bounds of the highlighted ZIP code to fit the map
+        highlighted_zip = None
+        for feature in nyc_zipcodes['features']:
+            if feature['properties']['MODZCTA'] == str(zip_code):
+                highlighted_zip = feature
+                break
+
+        if highlighted_zip:
+            # Add a marker for the alert location
+            # Calculate centroid of the ZIP code polygon
+            coords = highlighted_zip['geometry']['coordinates'][0]
+            if highlighted_zip['geometry']['type'] == 'MultiPolygon':
+                coords = highlighted_zip['geometry']['coordinates'][0][0]
+
+            # Simple centroid calculation
+            lats = [coord[1] for coord in coords]
+            lons = [coord[0] for coord in coords]
+            center_lat = sum(lats) / len(lats)
+            center_lon = sum(lons) / len(lons)
+
+            # Add marker with alert information
+            popup_text = f"""
+            <div style="width: 300px;">
+                <h5><i class="fas fa-exclamation-triangle"></i> {pattern_data['pattern_type'].replace('_', ' ').title()} Alert</h5>
+                <p><strong>ZIP Code:</strong> {zip_code}</p>
+                <p><strong>Hospital:</strong> {pattern_data['hospital_name']}</p>
+                <p><strong>Date:</strong> {pattern_data['date']}</p>
+                <p><strong>Current Visits:</strong> {pattern_data['current_value']}</p>
+                <p><strong>Change:</strong> {pattern_data['percentage_change']:.1f}% from average</p>
+                <p><strong>Confidence:</strong> {pattern_data['confidence_score']:.0f}%</p>
+            </div>
+            """
+
+            folium.Marker(
+                location=[center_lat, center_lon],
+                popup=folium.Popup(popup_text, max_width=350),
+                tooltip=f"Alert in ZIP {zip_code}",
+                icon=folium.Icon(color='red', icon='exclamation-triangle', prefix='fa')
+            ).add_to(m)
+
+            # Fit map to the highlighted ZIP code area with some padding
+            m.fit_bounds([[min(lats), min(lons)], [max(lats), max(lons)]], padding=[20, 20])
+
+        # Return the map as HTML string
+        return m._repr_html_()
+
+    except Exception as e:
+        print(f"Error creating map: {e}")
+        # Return a simple fallback map
+        m = folium.Map(location=[40.7128, -73.9352], zoom_start=10)
+        folium.Marker(
+            location=[40.7128, -73.9352],
+            popup=f"Alert in ZIP {zip_code}",
+            tooltip=f"ZIP {zip_code}",
+            icon=folium.Icon(color='red', icon='exclamation-triangle', prefix='fa')
+        ).add_to(m)
+        return m._repr_html_()
+
 # Initialize dashboard manager
 dashboard_manager = DashboardManager()
 
@@ -333,6 +454,22 @@ def settings_page():
 def patterns_page():
     """Patterns analysis page."""
     return render_template('patterns.html')
+
+@app.route('/alert/<int:alert_id>')
+def alert_detail(alert_id):
+    """Alert detail page with interactive map."""
+    # Get alert details
+    pattern = dashboard_manager.get_pattern_by_id(alert_id)
+    if not pattern:
+        flash('Alert not found', 'error')
+        return redirect(url_for('index'))
+
+    # Create interactive map
+    map_html = create_alert_map(pattern['zip_code'], pattern)
+
+    return render_template('alert_detail.html',
+                         pattern=pattern,
+                         map_html=map_html)
 
 @socketio.on('connect')
 def handle_connect():

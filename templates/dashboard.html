@@ -368,7 +368,10 @@ function updateRecentAlerts() {
                 const icon = getPatternIcon(pattern.pattern_type);
                 
                 alertsHtml += `
-                    <div class="alert-item ${alertClass}">
+                    <div class="alert-item ${alertClass}" style="cursor: pointer; transition: all 0.2s;"
+                         onmouseover="this.style.backgroundColor='#f8f9fa'"
+                         onmouseout="this.style.backgroundColor=''"
+                         onclick="window.location.href='/alert/${pattern.id}'">
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <h6 class="mb-1">
@@ -379,16 +382,21 @@ function updateRecentAlerts() {
                                     <strong>${pattern.hospital_name}</strong> - ${formatDate(pattern.date)}
                                 </p>
                                 <p class="mb-1">
-                                    Current: ${pattern.current_value} visits 
+                                    Current: ${pattern.current_value} visits
                                     (${pattern.percentage_change > 0 ? '+' : ''}${pattern.percentage_change.toFixed(1)}% from average)
                                 </p>
                                 <small class="text-muted">
                                     ${pattern.ai_explanation.substring(0, 150)}...
                                 </small>
                             </div>
-                            <span class="badge bg-secondary ms-2">
-                                ${pattern.confidence_score.toFixed(0)}% confidence
-                            </span>
+                            <div class="d-flex flex-column align-items-end">
+                                <span class="badge bg-secondary mb-2">
+                                    ${pattern.confidence_score.toFixed(0)}% confidence
+                                </span>
+                                <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); window.location.href='/alert/${pattern.id}'">
+                                    <i class="fas fa-map-marked-alt me-1"></i>View Details
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;

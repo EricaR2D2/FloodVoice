@@ -10,11 +10,14 @@ statsmodels>=0.14.0
 scipy>=1.10.0
 
 # Database
-sqlite3  # Built into Python
+# sqlite3 is built into Python
 
 # Web framework and real-time features
 flask>=3.1.0
 flask-socketio>=5.5.0
+
+# Interactive mapping
+folium>=0.14.0
 
 # AI/ML integration
 # OpenRouter API (no additional package needed, uses requests)
