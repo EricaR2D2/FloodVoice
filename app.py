@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import threading
 import time
 from phase2_pattern_detection import PatternDetector
+from forecasting_engine import ForecastingEngine
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'public_health_mvp_secret_key_2024'
@@ -19,6 +20,7 @@ UPDATE_INTERVAL = 300  # 5 minutes for demo (would be real-time in production)
 class DashboardManager:
     def __init__(self):
         self.last_update = None
+        self.forecasting_engine = ForecastingEngine()
         self.alert_settings = {
             'spike_threshold': 30.0,
             'drop_threshold': 30.0,
@@ -105,22 +107,82 @@ class DashboardManager:
     def get_recent_patterns(self, limit=10):
         """Get recent pattern detections."""
         conn = self.get_database_connection()
-        
+
         try:
             query = """
-                SELECT date, zip_code, hospital_name, pattern_type, 
-                       current_value, rolling_mean, percentage_change, 
+                SELECT id, date, zip_code, hospital_name, pattern_type,
+                       current_value, rolling_mean, percentage_change,
                        confidence_score, ai_explanation, detection_timestamp
-                FROM pattern_detections 
-                ORDER BY detection_timestamp DESC 
+                FROM pattern_detections
+                ORDER BY detection_timestamp DESC
                 LIMIT ?
             """
-            
+
             df = pd.read_sql_query(query, conn, params=[limit])
             return df.to_dict('records')
-            
+
         finally:
             conn.close()
+
+    def get_pattern_by_id(self, pattern_id):
+        """Get a specific pattern by ID."""
+        conn = self.get_database_connection()
+
+        try:
+            query = """
+                SELECT id, date, zip_code, hospital_name, pattern_type,
+                       current_value, rolling_mean, percentage_change,
+                       confidence_score, ai_explanation, detection_timestamp,
+                       context_data
+                FROM pattern_detections
+                WHERE id = ?
+            """
+
+            df = pd.read_sql_query(query, conn, params=[pattern_id])
+            if len(df) > 0:
+                pattern = df.iloc[0].to_dict()
+                # Parse context_data if it exists
+                if pattern.get('context_data'):
+                    try:
+                        pattern['context_data'] = json.loads(pattern['context_data'])
+                    except:
+                        pattern['context_data'] = {}
+                return pattern
+            return None
+
+        finally:
+            conn.close()
+
+    def generate_pattern_forecast(self, pattern_id):
+        """Generate forecast for a specific pattern."""
+        pattern = self.get_pattern_by_id(pattern_id)
+        if not pattern:
+            return {'status': 'error', 'message': 'Pattern not found'}
+
+        try:
+            forecast = self.forecasting_engine.generate_forecast(
+                hospital_name=pattern['hospital_name'],
+                zip_code=pattern['zip_code'],
+                forecast_days=7,
+                days_back=30
+            )
+
+            # Add pattern context to forecast
+            forecast['pattern_context'] = {
+                'pattern_id': pattern_id,
+                'pattern_type': pattern['pattern_type'],
+                'pattern_date': pattern['date'],
+                'current_value': pattern['current_value'],
+                'percentage_change': pattern['percentage_change']
+            }
+
+            return forecast
+
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': f'Forecast generation failed: {str(e)}'
+            }
     
     def update_alert_settings(self, settings):
         """Update alert configuration settings."""
@@ -189,6 +251,21 @@ def api_settings():
         return jsonify({'status': 'success', 'message': 'Settings updated successfully'})
     else:
         return jsonify(dashboard_manager.alert_settings)
+
+@app.route('/api/pattern/<int:pattern_id>')
+def api_pattern_detail(pattern_id):
+    """API endpoint for pattern details."""
+    pattern = dashboard_manager.get_pattern_by_id(pattern_id)
+    if pattern:
+        return jsonify(pattern)
+    else:
+        return jsonify({'status': 'error', 'message': 'Pattern not found'}), 404
+
+@app.route('/api/pattern/<int:pattern_id>/forecast')
+def api_pattern_forecast(pattern_id):
+    """API endpoint for pattern-specific forecasting."""
+    forecast = dashboard_manager.generate_pattern_forecast(pattern_id)
+    return jsonify(forecast)
 
 @app.route('/api/run-detection', methods=['POST'])
 def api_run_detection():

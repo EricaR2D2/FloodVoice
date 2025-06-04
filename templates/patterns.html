@@ -172,6 +172,32 @@
         </div>
     </div>
 </div>
+
+<!-- Forecast Modal -->
+<div class="modal fade" id="forecastModal" tabindex="-1" aria-labelledby="forecastModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="forecastModalLabel">
+                    <i class="fas fa-crystal-ball me-2"></i>
+                    7-Day Forecast
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="forecastContent">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                        <p class="mt-2">Generating forecast...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_css %}
@@ -332,9 +358,16 @@ function displayPatterns() {
                                 <small class="text-muted">Confidence Score</small>
                                 <div class="h5 mb-1">${pattern.confidence_score.toFixed(0)}%</div>
                                 <div class="confidence-bar">
-                                    <div class="confidence-fill ${confidenceClass}" 
+                                    <div class="confidence-fill ${confidenceClass}"
                                          style="width: ${pattern.confidence_score}%"></div>
                                 </div>
+                            </div>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        onclick="showForecast(${pattern.id || 'null'})">
+                                    <i class="fas fa-crystal-ball me-1"></i>
+                                    View Forecast
+                                </button>
                             </div>
                             <div class="mt-3">
                                 <small class="text-muted">
@@ -395,6 +428,149 @@ function refreshPatterns() {
     loadPatterns();
 }
 
+function showForecast(patternId) {
+    if (!patternId) {
+        showNotification('Pattern ID not available for forecasting', 'warning');
+        return;
+    }
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('forecastModal'));
+    modal.show();
+
+    // Reset content
+    document.getElementById('forecastContent').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+            <p class="mt-2">Generating forecast...</p>
+        </div>
+    `;
+
+    // Fetch forecast data
+    fetch(`/api/pattern/${patternId}/forecast`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                displayForecastData(data);
+            } else {
+                displayForecastError(data.message || 'Forecast generation failed');
+            }
+        })
+        .catch(error => {
+            console.error('Forecast error:', error);
+            displayForecastError('Network error while generating forecast');
+        });
+}
+
+function displayForecastData(forecastData) {
+    const content = document.getElementById('forecastContent');
+
+    // Extract data
+    const forecast = forecastData;
+    const context = forecast.pattern_context || {};
+
+    content.innerHTML = `
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">Pattern Context</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Pattern Type:</strong> ${context.pattern_type || 'Unknown'}</p>
+                        <p><strong>Detection Date:</strong> ${context.pattern_date || 'Unknown'}</p>
+                        <p><strong>Current Value:</strong> ${context.current_value || 'Unknown'} visits</p>
+                        <p><strong>Change:</strong> ${context.percentage_change ? (context.percentage_change > 0 ? '+' : '') + context.percentage_change.toFixed(1) + '%' : 'Unknown'}</p>
+                        <p><strong>Hospital:</strong> ${forecast.hospital_name || 'Unknown'}</p>
+                        <p><strong>ZIP Code:</strong> ${forecast.zip_code || 'Unknown'}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">Forecast Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Model Used:</strong> ${forecast.model_used || 'Unknown'}</p>
+                        <p><strong>Historical Data:</strong> ${forecast.historical_data_points || 'Unknown'} days</p>
+                        <p><strong>Forecast Period:</strong> 7 days</p>
+                        <p><strong>Generated:</strong> ${new Date(forecast.forecast_generated_at).toLocaleString()}</p>
+                        <div class="mt-3">
+                            <h6>Predicted Trend:</h6>
+                            <p class="text-muted">${generateForecastSummary(forecast)}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Historical Data + 7-Day Forecast
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="forecastChart" height="400"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-table me-2"></i>
+                            Forecast Values
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Predicted Visits</th>
+                                        <th>Lower Bound</th>
+                                        <th>Upper Bound</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="forecastTable">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Populate forecast table
+    populateForecastTable(forecast);
+
+    // Create forecast chart
+    createForecastChart(forecast);
+}
+
+function displayForecastError(errorMessage) {
+    const content = document.getElementById('forecastContent');
+    content.innerHTML = `
+        <div class="text-center text-danger">
+            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+            <h5>Forecast Generation Failed</h5>
+            <p>${errorMessage}</p>
+            <p class="text-muted">This could be due to insufficient historical data or technical issues.</p>
+        </div>
+    `;
+}
+
 function formatDate(dateString) {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
@@ -407,12 +583,155 @@ function formatDate(dateString) {
 
 function formatDateTime(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'short', 
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
         day: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
         hour12: true
+    });
+}
+
+function generateForecastSummary(forecast) {
+    if (!forecast.values || forecast.values.length === 0) {
+        return "No forecast data available";
+    }
+
+    const values = forecast.values;
+    const avgForecast = values.reduce((sum, val) => sum + val, 0) / values.length;
+
+    let trend = "stable";
+    if (values.length > 1) {
+        const firstValue = values[0];
+        const lastValue = values[values.length - 1];
+        if (lastValue > firstValue * 1.1) {
+            trend = "increasing";
+        } else if (lastValue < firstValue * 0.9) {
+            trend = "decreasing";
+        }
+    }
+
+    return `Average predicted visits: ${avgForecast.toFixed(1)} (${trend} trend over 7 days)`;
+}
+
+function populateForecastTable(forecast) {
+    const tableBody = document.getElementById('forecastTable');
+    if (!forecast.dates || !forecast.values) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No forecast data available</td></tr>';
+        return;
+    }
+
+    let html = '';
+    for (let i = 0; i < forecast.dates.length; i++) {
+        const date = new Date(forecast.dates[i]).toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        });
+        const value = forecast.values[i].toFixed(1);
+        const lower = forecast.lower_bound ? forecast.lower_bound[i].toFixed(1) : 'N/A';
+        const upper = forecast.upper_bound ? forecast.upper_bound[i].toFixed(1) : 'N/A';
+
+        html += `
+            <tr>
+                <td>${date}</td>
+                <td><strong>${value}</strong></td>
+                <td class="text-muted">${lower}</td>
+                <td class="text-muted">${upper}</td>
+            </tr>
+        `;
+    }
+    tableBody.innerHTML = html;
+}
+
+function createForecastChart(forecast) {
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+
+    // Get historical data from the forecast engine
+    const historicalDates = [];
+    const historicalValues = [];
+
+    // Create combined labels (historical + forecast)
+    const allLabels = [...historicalDates, ...forecast.dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))];
+
+    // Prepare datasets
+    const datasets = [
+        {
+            label: 'Forecast',
+            data: [...Array(historicalDates.length).fill(null), ...forecast.values],
+            borderColor: '#e74a3b',
+            backgroundColor: 'rgba(231, 74, 59, 0.1)',
+            borderDash: [5, 5],
+            borderWidth: 2,
+            fill: false,
+            pointBackgroundColor: '#e74a3b',
+            pointBorderColor: '#e74a3b',
+            pointRadius: 4
+        }
+    ];
+
+    // Add confidence intervals if available
+    if (forecast.upper_bound && forecast.lower_bound) {
+        datasets.push({
+            label: 'Confidence Interval (Upper)',
+            data: [...Array(historicalDates.length).fill(null), ...forecast.upper_bound],
+            borderColor: 'rgba(231, 74, 59, 0.3)',
+            backgroundColor: 'rgba(231, 74, 59, 0.1)',
+            fill: '+1',
+            borderWidth: 1,
+            pointRadius: 0
+        });
+
+        datasets.push({
+            label: 'Confidence Interval (Lower)',
+            data: [...Array(historicalDates.length).fill(null), ...forecast.lower_bound],
+            borderColor: 'rgba(231, 74, 59, 0.3)',
+            backgroundColor: 'rgba(231, 74, 59, 0.1)',
+            fill: false,
+            borderWidth: 1,
+            pointRadius: 0
+        });
+    }
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: forecast.dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `7-Day Forecast for ${forecast.hospital_name} (ZIP ${forecast.zip_code})`
+                },
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'ER Respiratory Visits'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
     });
 }
 </script>
