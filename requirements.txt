@@ -15,6 +15,7 @@ scipy>=1.10.0
 # Web framework and real-time features
 flask>=3.1.0
 flask-socketio>=5.5.0
+flask-login>=0.6.0
 
 # Interactive mapping
 folium>=0.14.0

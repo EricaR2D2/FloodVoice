@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
 from flask_socketio import SocketIO, emit
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import sqlite3
 import pandas as pd
 import json
@@ -10,10 +11,23 @@ import folium
 import os
 from phase2_pattern_detection import PatternDetector
 from forecasting_engine import ForecastingEngine
+from models import User, init_user_db
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'public_health_mvp_secret_key_2024'
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Please log in to access this page.'
+login_manager.login_message_category = 'info'
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Load user for Flask-Login."""
+    return User.get(int(user_id))
 
 # Configuration
 DATABASE_PATH = 'public_health_data.db'
@@ -338,18 +352,114 @@ def create_alert_map(zip_code, pattern_data):
 # Initialize dashboard manager
 dashboard_manager = DashboardManager()
 
+# Authentication Routes
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Login page and handler."""
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        remember = bool(request.form.get('remember'))
+
+        if not username or not password:
+            flash('Please enter both username and password.', 'error')
+            return render_template('login.html')
+
+        user = User.get_by_username(username)
+
+        if user and user.check_password(password):
+            login_user(user, remember=remember)
+            user.update_last_login()
+
+            # Redirect to next page or dashboard
+            next_page = request.args.get('next')
+            if next_page:
+                return redirect(next_page)
+
+            flash(f'Welcome back, {user.username}!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Invalid username or password.', 'error')
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    """Logout handler."""
+    username = current_user.username
+    logout_user()
+    flash(f'You have been logged out, {username}.', 'info')
+    return redirect(url_for('login'))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """User registration page and handler."""
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        # Validation
+        if not username or not password or not confirm_password:
+            flash('Please fill in all fields.', 'error')
+            return render_template('register.html')
+
+        if len(username) < 3:
+            flash('Username must be at least 3 characters long.', 'error')
+            return render_template('register.html')
+
+        if len(password) < 6:
+            flash('Password must be at least 6 characters long.', 'error')
+            return render_template('register.html')
+
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return render_template('register.html')
+
+        # Check if username already exists
+        if User.get_by_username(username):
+            flash('Username already exists. Please choose a different one.', 'error')
+            return render_template('register.html')
+
+        # Create new user
+        new_user = User(
+            id=None,
+            username=username,
+            password_hash=None,
+            created_at=datetime.now().isoformat()
+        )
+        new_user.set_password(password)
+
+        if new_user.save():
+            flash('Registration successful! You can now log in.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Registration failed. Please try again.', 'error')
+
+    return render_template('register.html')
+
 @app.route('/')
+@login_required
 def index():
     """Main dashboard page."""
     return render_template('dashboard.html')
 
 @app.route('/api/summary')
+@login_required
 def api_summary():
     """API endpoint for dashboard summary data."""
     summary = dashboard_manager.get_dashboard_summary()
     return jsonify(summary)
 
 @app.route('/api/hospital-data')
+@login_required
 def api_hospital_data():
     """API endpoint for hospital data visualization."""
     days = request.args.get('days', 30, type=int)
@@ -357,6 +467,7 @@ def api_hospital_data():
     return jsonify(data)
 
 @app.route('/api/patterns')
+@login_required
 def api_patterns():
     """API endpoint for recent patterns."""
     limit = request.args.get('limit', 10, type=int)
@@ -364,6 +475,7 @@ def api_patterns():
     return jsonify(patterns)
 
 @app.route('/api/settings', methods=['GET', 'POST'])
+@login_required
 def api_settings():
     """API endpoint for alert settings."""
     if request.method == 'POST':
@@ -374,6 +486,7 @@ def api_settings():
         return jsonify(dashboard_manager.alert_settings)
 
 @app.route('/api/pattern/<int:pattern_id>')
+@login_required
 def api_pattern_detail(pattern_id):
     """API endpoint for pattern details."""
     pattern = dashboard_manager.get_pattern_by_id(pattern_id)
@@ -383,12 +496,14 @@ def api_pattern_detail(pattern_id):
         return jsonify({'status': 'error', 'message': 'Pattern not found'}), 404
 
 @app.route('/api/pattern/<int:pattern_id>/forecast')
+@login_required
 def api_pattern_forecast(pattern_id):
     """API endpoint for pattern-specific forecasting."""
     forecast = dashboard_manager.generate_pattern_forecast(pattern_id)
     return jsonify(forecast)
 
 @app.route('/api/simulate-alerts', methods=['POST'])
+@login_required
 def api_simulate_alerts():
     """API endpoint for threshold simulation."""
     try:
@@ -429,6 +544,7 @@ def api_simulate_alerts():
         }), 500
 
 @app.route('/api/run-detection', methods=['POST'])
+@login_required
 def api_run_detection():
     """API endpoint to manually trigger pattern detection."""
     patterns_found = dashboard_manager.run_pattern_detection()
@@ -446,16 +562,19 @@ def api_run_detection():
     })
 
 @app.route('/settings')
+@login_required
 def settings_page():
     """Settings configuration page."""
     return render_template('settings.html')
 
 @app.route('/patterns')
+@login_required
 def patterns_page():
     """Patterns analysis page."""
     return render_template('patterns.html')
 
 @app.route('/alert/<int:alert_id>')
+@login_required
 def alert_detail(alert_id):
     """Alert detail page with interactive map."""
     # Get alert details
@@ -507,13 +626,18 @@ def background_data_update():
         time.sleep(UPDATE_INTERVAL)
 
 if __name__ == '__main__':
+    # Initialize user database
+    print("🔧 Initializing authentication system...")
+    init_user_db()
+
     # Start background update thread
     update_thread = threading.Thread(target=background_data_update, daemon=True)
     update_thread.start()
-    
+
     print("🚀 Public Health MVP Dashboard Starting...")
     print("📊 Dashboard: http://localhost:5000")
     print("⚙️  Settings: http://localhost:5000/settings")
     print("🔍 Patterns: http://localhost:5000/patterns")
-    
+    print("🔐 Login: http://localhost:5000/login")
+
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)

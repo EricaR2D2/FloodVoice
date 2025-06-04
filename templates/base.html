@@ -88,10 +88,33 @@
                 NYC Public Health MVP
             </a>
             <div class="navbar-nav ms-auto">
-                <span class="navbar-text">
-                    <span class="status-indicator real-time-indicator" id="connectionStatus"></span>
-                    <span id="connectionText">Connecting...</span>
-                </span>
+                {% if current_user.is_authenticated %}
+                    <span class="navbar-text me-3">
+                        <span class="status-indicator real-time-indicator" id="connectionStatus"></span>
+                        <span id="connectionText">Connecting...</span>
+                    </span>
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i>
+                            {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">Logged in as {{ current_user.username }}</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a class="nav-link" href="{{ url_for('login') }}">
+                        <i class="fas fa-sign-in-alt me-1"></i>
+                        Login
+                    </a>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -141,6 +164,21 @@
 
             <!-- Main content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="pt-3">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'info-circle' if category == 'info' else 'check-circle' }} me-2"></i>
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
                 <div class="pt-3 pb-2 mb-3">
                     {% block content %}{% endblock %}
                 </div>
