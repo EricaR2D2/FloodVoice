@@ -267,6 +267,46 @@ def api_pattern_forecast(pattern_id):
     forecast = dashboard_manager.generate_pattern_forecast(pattern_id)
     return jsonify(forecast)
 
+@app.route('/api/simulate-alerts', methods=['POST'])
+def api_simulate_alerts():
+    """API endpoint for threshold simulation."""
+    try:
+        # Get simulation parameters from request
+        simulation_params = request.json
+
+        # Extract threshold values (convert percentages to decimals)
+        custom_thresholds = {
+            'spike_threshold': simulation_params.get('sim_spike_percentage', 30) / 100.0,
+            'drop_threshold': simulation_params.get('sim_drop_percentage', 30) / 100.0,
+            'consistently_high_threshold': simulation_params.get('sim_high_value_threshold', 20) / 100.0
+        }
+
+        # Get simulation period
+        days_back = simulation_params.get('days_back', 30)
+
+        # Run simulation
+        detector = PatternDetector()
+        simulated_alerts = detector.simulate_alerts(custom_thresholds, days_back)
+        detector.close()
+
+        return jsonify({
+            'status': 'success',
+            'simulation_params': {
+                'spike_threshold': custom_thresholds['spike_threshold'] * 100,
+                'drop_threshold': custom_thresholds['drop_threshold'] * 100,
+                'consistently_high_threshold': custom_thresholds['consistently_high_threshold'] * 100,
+                'days_back': days_back
+            },
+            'alerts_found': len(simulated_alerts),
+            'simulated_alerts': simulated_alerts
+        })
+
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Simulation failed: {str(e)}'
+        }), 500
+
 @app.route('/api/run-detection', methods=['POST'])
 def api_run_detection():
     """API endpoint to manually trigger pattern detection."""
