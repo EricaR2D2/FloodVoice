@@ -52,35 +52,53 @@ class DashboardManager:
     
     def get_dashboard_summary(self):
         """Get summary statistics for dashboard."""
+        print("🔍 Starting get_dashboard_summary...")
         conn = self.get_database_connection()
-        
+
         try:
+            print("📊 Getting counts...")
             # Get total records count
-            hospital_count = pd.read_sql_query("SELECT COUNT(*) as count FROM hospital_data", conn).iloc[0]['count']
-            pattern_count = pd.read_sql_query("SELECT COUNT(*) as count FROM pattern_detections", conn).iloc[0]['count']
-            
+            hospital_count_df = pd.read_sql_query("SELECT COUNT(*) as count FROM hospital_data", conn)
+            hospital_count = int(hospital_count_df.iloc[0]['count'])
+
+            pattern_count_df = pd.read_sql_query("SELECT COUNT(*) as count FROM pattern_detections", conn)
+            pattern_count = int(pattern_count_df.iloc[0]['count'])
+            print(f"✅ Counts - Hospital: {hospital_count}, Patterns: {pattern_count}")
+
+            print("📊 Getting latest data...")
             # Get latest data timestamp
-            latest_data = pd.read_sql_query("""
+            latest_data_df = pd.read_sql_query("""
                 SELECT MAX(date) as latest_date FROM hospital_data
-            """, conn).iloc[0]['latest_date']
-            
+            """, conn)
+            latest_data = latest_data_df.iloc[0]['latest_date']
+            print(f"✅ Latest data: {latest_data}")
+
+            print("📊 Getting recent patterns...")
             # Get recent patterns (last 7 days)
             recent_patterns = pd.read_sql_query("""
-                SELECT pattern_type, COUNT(*) as count 
-                FROM pattern_detections 
+                SELECT pattern_type, COUNT(*) as count
+                FROM pattern_detections
                 WHERE date >= date('now', '-7 days')
                 GROUP BY pattern_type
             """, conn)
-            
+            print(f"✅ Recent patterns shape: {recent_patterns.shape}")
+
+            print("📊 Getting data sources...")
             # Get data source status
+            air_quality_count = int(pd.read_sql_query("SELECT COUNT(*) as count FROM air_quality_data", conn).iloc[0]['count'])
+            cdc_count = int(pd.read_sql_query("SELECT COUNT(*) as count FROM cdc_ili_data", conn).iloc[0]['count'])
+            covid_count = int(pd.read_sql_query("SELECT COUNT(*) as count FROM nyc_covid_data", conn).iloc[0]['count'])
+
             data_sources = {
                 'hospital_data': hospital_count > 0,
-                'air_quality_data': pd.read_sql_query("SELECT COUNT(*) as count FROM air_quality_data", conn).iloc[0]['count'] > 0,
-                'cdc_ili_data': pd.read_sql_query("SELECT COUNT(*) as count FROM cdc_ili_data", conn).iloc[0]['count'] > 0,
-                'nyc_covid_data': pd.read_sql_query("SELECT COUNT(*) as count FROM nyc_covid_data", conn).iloc[0]['count'] > 0
+                'air_quality_data': air_quality_count > 0,
+                'cdc_ili_data': cdc_count > 0,
+                'nyc_covid_data': covid_count > 0
             }
-            
-            return {
+            print(f"✅ Data sources: {data_sources}")
+
+            print("📊 Building result...")
+            result = {
                 'total_hospital_records': hospital_count,
                 'total_patterns_detected': pattern_count,
                 'latest_data_date': latest_data,
@@ -88,7 +106,14 @@ class DashboardManager:
                 'data_sources': data_sources,
                 'last_update': datetime.now().isoformat()
             }
-            
+            print(f"✅ Result built successfully with {len(result)} keys")
+            return result
+
+        except Exception as e:
+            print(f"❌ Error in get_dashboard_summary: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
         finally:
             conn.close()
     
@@ -349,6 +374,144 @@ def create_alert_map(zip_code, pattern_data):
         ).add_to(m)
         return m._repr_html_()
 
+def create_overview_map(patterns):
+    """Create an overview map showing all recent alert locations."""
+    try:
+        # Load NYC ZIP codes GeoJSON
+        geojson_path = os.path.join('static', 'nyc_zipcodes.geojson')
+        with open(geojson_path, 'r') as f:
+            nyc_zipcodes = json.load(f)
+
+        # Create map centered on NYC
+        nyc_center = [40.7128, -73.9352]  # NYC coordinates
+        m = folium.Map(location=nyc_center, zoom_start=10)
+
+        # Get unique ZIP codes with patterns
+        zip_patterns = {}
+        for pattern in patterns:
+            zip_code = str(pattern['zip_code'])
+            if zip_code not in zip_patterns:
+                zip_patterns[zip_code] = []
+            zip_patterns[zip_code].append(pattern)
+
+        # Style function for ZIP codes
+        def style_function(feature):
+            zip_code_feature = feature['properties']['MODZCTA']
+            if zip_code_feature in zip_patterns:
+                # Highlight ZIP codes with alerts
+                pattern_count = len(zip_patterns[zip_code_feature])
+                if pattern_count >= 3:
+                    color = '#d62728'  # Red for high activity
+                    fillColor = '#ff7f0e'
+                elif pattern_count >= 2:
+                    color = '#ff7f0e'  # Orange for medium activity
+                    fillColor = '#ffbb78'
+                else:
+                    color = '#2ca02c'  # Green for low activity
+                    fillColor = '#98df8a'
+
+                return {
+                    'fillColor': fillColor,
+                    'color': color,
+                    'weight': 2,
+                    'fillOpacity': 0.6,
+                    'opacity': 1.0
+                }
+            else:
+                # Default style for ZIP codes without alerts
+                return {
+                    'fillColor': '#1f77b4',
+                    'color': '#aec7e8',
+                    'weight': 1,
+                    'fillOpacity': 0.1,
+                    'opacity': 0.3
+                }
+
+        # Add ZIP code boundaries
+        folium.GeoJson(
+            nyc_zipcodes,
+            style_function=style_function,
+            tooltip=folium.features.GeoJsonTooltip(
+                fields=['MODZCTA'],
+                aliases=['ZIP Code:'],
+                localize=True
+            )
+        ).add_to(m)
+
+        # Add markers for each pattern
+        for zip_code, zip_patterns_list in zip_patterns.items():
+            # Find the center of the ZIP code
+            zip_feature = None
+            for feature in nyc_zipcodes['features']:
+                if feature['properties']['MODZCTA'] == zip_code:
+                    zip_feature = feature
+                    break
+
+            if zip_feature and zip_feature['geometry']['type'] == 'Polygon':
+                # Calculate centroid
+                coords = zip_feature['geometry']['coordinates'][0]
+                lats = [coord[1] for coord in coords]
+                lons = [coord[0] for coord in coords]
+                center_lat = sum(lats) / len(lats)
+                center_lon = sum(lons) / len(lons)
+
+                # Create popup content
+                popup_content = f"<b>ZIP Code {zip_code}</b><br>"
+                popup_content += f"<b>{len(zip_patterns_list)} Recent Alerts</b><br><br>"
+
+                for pattern in zip_patterns_list[:3]:  # Show up to 3 patterns
+                    popup_content += f"• {pattern['pattern_type'].replace('_', ' ').title()}<br>"
+                    popup_content += f"  {pattern['hospital_name']}<br>"
+                    popup_content += f"  {pattern['date']}<br><br>"
+
+                if len(zip_patterns_list) > 3:
+                    popup_content += f"... and {len(zip_patterns_list) - 3} more"
+
+                # Choose marker color based on pattern types
+                spike_count = sum(1 for p in zip_patterns_list if p['pattern_type'] == 'spike')
+                if spike_count > 0:
+                    marker_color = 'red'
+                    icon = 'arrow-up'
+                else:
+                    marker_color = 'orange'
+                    icon = 'exclamation-triangle'
+
+                folium.Marker(
+                    location=[center_lat, center_lon],
+                    popup=folium.Popup(popup_content, max_width=300),
+                    tooltip=f"{len(zip_patterns_list)} alerts in ZIP {zip_code}",
+                    icon=folium.Icon(color=marker_color, icon=icon, prefix='fa')
+                ).add_to(m)
+
+        # Add legend
+        legend_html = '''
+        <div style="position: fixed;
+                    bottom: 50px; left: 50px; width: 200px; height: 120px;
+                    background-color: white; border:2px solid grey; z-index:9999;
+                    font-size:14px; padding: 10px">
+        <p><b>Alert Activity</b></p>
+        <p><i class="fa fa-circle" style="color:#d62728"></i> High (3+ alerts)</p>
+        <p><i class="fa fa-circle" style="color:#ff7f0e"></i> Medium (2 alerts)</p>
+        <p><i class="fa fa-circle" style="color:#2ca02c"></i> Low (1 alert)</p>
+        <p><i class="fa fa-circle" style="color:#1f77b4"></i> No alerts</p>
+        </div>
+        '''
+        m.get_root().html.add_child(folium.Element(legend_html))
+
+        return m._repr_html_()
+
+    except Exception as e:
+        print(f"Error creating overview map: {e}")
+        # Return simple fallback map
+        m = folium.Map(location=[40.7128, -73.9352], zoom_start=10)
+        folium.Marker(
+            location=[40.7128, -73.9352],
+            popup="NYC Public Health Dashboard",
+            tooltip="NYC Overview",
+            icon=folium.Icon(color='blue', icon='info-sign')
+        ).add_to(m)
+        return m._repr_html_()
+
 # Initialize dashboard manager
 dashboard_manager = DashboardManager()
 
@@ -455,8 +618,16 @@ def index():
 @login_required
 def api_summary():
     """API endpoint for dashboard summary data."""
-    summary = dashboard_manager.get_dashboard_summary()
-    return jsonify(summary)
+    try:
+        print(f"🔍 API Summary called by user: {current_user.username}")
+        summary = dashboard_manager.get_dashboard_summary()
+        print(f"✅ Summary generated successfully: {len(summary)} keys")
+        return jsonify(summary)
+    except Exception as e:
+        print(f"❌ API Summary error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/hospital-data')
 @login_required
@@ -572,6 +743,47 @@ def settings_page():
 def patterns_page():
     """Patterns analysis page."""
     return render_template('patterns.html')
+
+@app.route('/debug')
+@login_required
+def debug_page():
+    """Debug page to test data loading."""
+    try:
+        summary = dashboard_manager.get_dashboard_summary()
+        return f"""
+        <h1>Debug Info</h1>
+        <p><strong>User:</strong> {current_user.username}</p>
+        <p><strong>Total Hospital Records:</strong> {summary.get('total_hospital_records', 'Error')}</p>
+        <p><strong>Total Patterns:</strong> {summary.get('total_patterns_detected', 'Error')}</p>
+        <p><strong>Latest Data:</strong> {summary.get('latest_data_date', 'Error')}</p>
+        <p><strong>Last Update:</strong> {summary.get('last_update', 'Error')}</p>
+        <hr>
+        <p><a href="/">Back to Dashboard</a></p>
+        <hr>
+        <pre>{summary}</pre>
+        """
+    except Exception as e:
+        return f"<h1>Debug Error</h1><p>{str(e)}</p><p><a href='/'>Back to Dashboard</a></p>"
+
+@app.route('/api/dashboard-map')
+@login_required
+def api_dashboard_map():
+    """API endpoint for dashboard overview map."""
+    try:
+        # Get recent patterns for map
+        patterns = dashboard_manager.get_recent_patterns(10)
+
+        if not patterns:
+            # Create empty map if no patterns
+            return create_overview_map([])
+
+        # Create overview map with all recent patterns
+        map_html = create_overview_map(patterns)
+        return map_html
+
+    except Exception as e:
+        print(f"Error creating dashboard map: {e}")
+        return create_overview_map([])
 
 @app.route('/alert/<int:alert_id>')
 @login_required

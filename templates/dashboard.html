@@ -152,6 +152,35 @@
     </div>
 </div>
 
+<!-- Interactive Map -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-map-marked-alt me-2"></i>
+                    Alert Locations Map
+                </h6>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadAlertMap()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh Map
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div id="alertMap" style="height: 500px; width: 100%;">
+                    <div class="d-flex justify-content-center align-items-center h-100">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading map...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Loading alert locations...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Recent Alerts -->
 <div class="row">
     <div class="col-lg-12">
@@ -196,34 +225,53 @@ let patternChart = null;
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
-    updateDashboard();
     initializeCharts();
+    updateDashboard();
 });
 
 function updateDashboard() {
     updateSummaryCards();
     updateCharts();
     updateRecentAlerts();
+    loadAlertMap();
 }
 
 function updateSummaryCards() {
     fetch('/api/summary')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            document.getElementById('totalRecords').textContent = data.total_hospital_records.toLocaleString();
-            document.getElementById('totalPatterns').textContent = data.total_patterns_detected.toLocaleString();
-            document.getElementById('latestData').textContent = formatDate(data.latest_data_date);
-            document.getElementById('lastUpdate').textContent = formatTime(data.last_update);
+            console.log('Summary data received:', data);
+
+            const totalRecordsEl = document.getElementById('totalRecords');
+            const totalPatternsEl = document.getElementById('totalPatterns');
+            const latestDataEl = document.getElementById('latestData');
+            const lastUpdateEl = document.getElementById('lastUpdate');
+
+            if (totalRecordsEl) totalRecordsEl.textContent = data.total_hospital_records.toLocaleString();
+            if (totalPatternsEl) totalPatternsEl.textContent = data.total_patterns_detected.toLocaleString();
+            if (latestDataEl) latestDataEl.textContent = formatDate(data.latest_data_date);
+            if (lastUpdateEl) lastUpdateEl.textContent = formatTime(data.last_update);
         })
         .catch(error => {
             console.error('Error updating summary cards:', error);
-            showNotification('Error loading dashboard data', 'danger');
+            showNotification(`Error loading dashboard data: ${error.message}`, 'danger');
         });
 }
 
 function initializeCharts() {
     // Initialize hospital data chart
-    const hospitalCtx = document.getElementById('hospitalChart').getContext('2d');
+    const hospitalCanvas = document.getElementById('hospitalChart');
+    if (!hospitalCanvas) {
+        console.error('Hospital chart canvas not found');
+        return;
+    }
+
+    const hospitalCtx = hospitalCanvas.getContext('2d');
     hospitalChart = new Chart(hospitalCtx, {
         type: 'line',
         data: {
@@ -265,7 +313,13 @@ function initializeCharts() {
     });
 
     // Initialize pattern distribution chart
-    const patternCtx = document.getElementById('patternChart').getContext('2d');
+    const patternCanvas = document.getElementById('patternChart');
+    if (!patternCanvas) {
+        console.error('Pattern chart canvas not found');
+        return;
+    }
+
+    const patternCtx = patternCanvas.getContext('2d');
     patternChart = new Chart(patternCtx, {
         type: 'doughnut',
         data: {
@@ -444,11 +498,87 @@ function formatDate(dateString) {
 
 function formatTime(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
+    return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
         minute: '2-digit',
         hour12: true
     });
+}
+
+function loadAlertMap() {
+    fetch('/api/dashboard-map')
+        .then(response => response.text())
+        .then(mapHtml => {
+            document.getElementById('alertMap').innerHTML = mapHtml;
+        })
+        .catch(error => {
+            console.error('Error loading map:', error);
+            document.getElementById('alertMap').innerHTML = `
+                <div class="d-flex justify-content-center align-items-center h-100">
+                    <div class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                        <p>Error loading map</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="loadAlertMap()">
+                            <i class="fas fa-redo me-1"></i>Retry
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+}
+
+function runPatternDetection() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Detecting...';
+    button.disabled = true;
+
+    fetch('/api/run-detection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showNotification(`Pattern detection complete. Found ${data.patterns_found} patterns.`, 'success');
+            updateDashboard(); // Refresh the dashboard
+        } else {
+            showNotification('Pattern detection failed', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error running pattern detection:', error);
+        showNotification('Error running pattern detection', 'danger');
+    })
+    .finally(() => {
+        // Restore button
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function showNotification(message, type) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
 }
 </script>
 {% endblock %}
