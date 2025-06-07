@@ -54,3 +54,7 @@ Thumbs.db
 # Data files that are too large or sensitive (uncomment if needed)
 # *.csv
 # *.json
+
+# Large analysis result files
+pattern_analysis_results.csv
+*_analysis_results.csv
