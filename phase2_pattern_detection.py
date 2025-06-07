@@ -491,17 +491,31 @@ class PatternDetector:
                     context_factors.append(f"Elevated influenza-like illness rates ({ili['ili_percent']}%) indicate broader respiratory illness circulation")
 
         elif pattern_type == 'drop':
-            base_explanation = f"🔵 NOTABLE DECREASE: Respiratory ER visits at {hospital} (ZIP {zip_code}) dropped to {current_value} visits on {date_str}, showing a {pct_change:+.1f}% decrease below the 7-day average."
+            base_explanation = f"🟢 POSITIVE HEALTH TREND: Respiratory ER visits at {hospital} (ZIP {zip_code}) decreased to {current_value} visits on {date_str}, showing a {pct_change:.1f}% improvement below the 7-day average."
 
+            # Add context for drops - focus on positive health indicators
             if 'air_quality' in context:
                 aqi = context['air_quality']
-                if aqi['aqi'] < 50:
-                    context_factors.append(f"Good air quality (AQI: {aqi['aqi']}) may be supporting respiratory health")
+                if aqi['aqi'] <= 50:
+                    context_factors.append(f"Excellent air quality (AQI: {aqi['aqi']}) likely supporting respiratory health improvement")
+                elif aqi['aqi'] <= 100:
+                    context_factors.append(f"Moderate air quality (AQI: {aqi['aqi']}) - health improvement despite environmental conditions")
+                else:
+                    context_factors.append(f"Health improvement occurring despite poor air quality (AQI: {aqi['aqi']})")
 
             if 'nyc_covid' in context:
                 covid = context['nyc_covid']
                 if covid['case_count'] < 50:
-                    context_factors.append(f"Low COVID-19 activity ({covid['case_count']} cases) suggests reduced viral transmission")
+                    context_factors.append(f"Low COVID-19 activity ({covid['case_count']} cases) supporting declining respiratory illness")
+                else:
+                    context_factors.append(f"Respiratory health improving despite COVID-19 activity ({covid['case_count']} cases)")
+
+            if 'cdc_ili' in context:
+                ili = context['cdc_ili']
+                if ili['ili_percent'] < 3:
+                    context_factors.append(f"Low influenza-like illness rates ({ili['ili_percent']}%) indicate successful respiratory illness control")
+                else:
+                    context_factors.append(f"ER visits declining despite elevated ILI rates ({ili['ili_percent']}%) - positive trend")
 
         elif pattern_type == 'consistently_high':
             base_explanation = f"🟡 SUSTAINED ELEVATION: Respiratory ER visits at {hospital} (ZIP {zip_code}) remain consistently elevated at {current_value} visits on {date_str}, maintaining a {pct_change:+.1f}% increase above average levels."
@@ -515,15 +529,51 @@ class PatternDetector:
         else:
             full_explanation = f"{base_explanation} This pattern warrants investigation to determine underlying causes."
 
-        # Add confidence and urgency indicators
-        if confidence >= 80:
-            urgency = "IMMEDIATE ATTENTION REQUIRED"
-        elif confidence >= 60:
-            urgency = "MONITORING RECOMMENDED"
-        else:
-            urgency = "FURTHER VALIDATION NEEDED"
+        # Add epidemiologically sound confidence and urgency indicators
+        urgency = self.determine_epidemiological_urgency(pattern_type, confidence, pct_change)
 
         return f"{full_explanation} Confidence: {confidence:.1f}% ({confidence_level}) - {urgency}."
+
+    def determine_epidemiological_urgency(self, pattern_type: str, confidence: float, pct_change: float) -> str:
+        """Determine urgency level based on epidemiological significance of pattern type."""
+
+        if pattern_type == 'drop':
+            # Drops in ER visits are positive trends - lower urgency even with high confidence
+            if confidence >= 80:
+                return "POSITIVE TREND CONFIRMED"
+            elif confidence >= 60:
+                return "IMPROVEMENT NOTED"
+            else:
+                return "POTENTIAL IMPROVEMENT"
+
+        elif pattern_type == 'spike':
+            # Spikes are concerning - higher urgency even with moderate confidence
+            if confidence >= 70:
+                return "IMMEDIATE ATTENTION REQUIRED"
+            elif confidence >= 50:
+                return "URGENT MONITORING REQUIRED"
+            elif confidence >= 30:
+                return "ENHANCED SURVEILLANCE NEEDED"
+            else:
+                return "FURTHER VALIDATION NEEDED"
+
+        elif pattern_type == 'consistently_high':
+            # Sustained high levels are concerning but less urgent than acute spikes
+            if confidence >= 80:
+                return "SUSTAINED ELEVATION - INTERVENTION NEEDED"
+            elif confidence >= 60:
+                return "ONGOING MONITORING REQUIRED"
+            else:
+                return "TREND VALIDATION NEEDED"
+
+        else:
+            # Fallback for unknown pattern types
+            if confidence >= 80:
+                return "HIGH CONFIDENCE DETECTION"
+            elif confidence >= 60:
+                return "MONITORING RECOMMENDED"
+            else:
+                return "FURTHER VALIDATION NEEDED"
 
     def construct_prompt(self, pattern_info: Dict) -> str:
         """Construct an enhanced, detailed prompt for the AI explanation."""
@@ -723,10 +773,20 @@ Provide a comprehensive but concise explanation (3-4 sentences) that a public he
     def display_pattern_result(self, pattern: Dict):
         """Display a single pattern result in a formatted way."""
         confidence_level = pattern.get('confidence_level', 'MEDIUM')
-        confidence_emoji = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(confidence_level, "🟡")
+        pattern_type = pattern['pattern_type']
+
+        # Use epidemiologically appropriate emojis based on pattern type and urgency
+        if pattern_type == 'drop':
+            pattern_emoji = "🟢"  # Green for positive health trends
+        elif pattern_type == 'spike':
+            pattern_emoji = "🔴"  # Red for concerning spikes
+        elif pattern_type == 'consistently_high':
+            pattern_emoji = "🟡"  # Yellow for sustained elevation
+        else:
+            pattern_emoji = "🔵"  # Blue for other patterns
 
         print("\n" + "="*70)
-        print(f"{confidence_emoji} PATTERN DETECTED: {pattern['pattern_type'].replace('_', ' ').upper()}")
+        print(f"{pattern_emoji} PATTERN DETECTED: {pattern['pattern_type'].replace('_', ' ').upper()}")
         print("="*70)
         print(f"📅 Date: {pattern['date'].strftime('%Y-%m-%d')}")
         print(f"📍 Location: ZIP {pattern['zip_code']} ({pattern['hospital_name']})")
