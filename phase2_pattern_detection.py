@@ -12,11 +12,15 @@ OPENROUTER_API_KEY = "sk-or-v1-6cf8e47d93173e0708b800eea8f11f80ee7f73e707fe6e373
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL_NAME = "openai/gpt-3.5-turbo"
 
-# Pattern detection thresholds (configurable)
-SPIKE_THRESHOLD = 0.30  # 30% above average
-DROP_THRESHOLD = 0.30   # 30% below average
+# Real-time pattern detection thresholds (configurable)
+SPIKE_THRESHOLD = 0.30  # 30% above average - for current surveillance
+DROP_THRESHOLD = 0.30   # 30% below average - for current surveillance
 CONSISTENTLY_HIGH_THRESHOLD = 0.20  # 20% above average for multiple days
 CONSISTENTLY_HIGH_DAYS = 3  # Number of consecutive days
+
+# Real-time analysis settings
+REAL_TIME_WINDOW_DAYS = 14  # Focus on last 2 weeks for current patterns
+RECENT_PATTERN_DAYS = 7     # Consider patterns from last week as "current"
 
 # Database and output paths
 DB_PATH = "public_health_data.db"
@@ -27,19 +31,29 @@ class PatternDetector:
     def __init__(self):
         self.conn = sqlite3.connect(DB_PATH)
         self.patterns_detected = []
-        
+        self.analysis_timestamp = datetime.now()
+
     def load_data(self) -> Dict[str, pd.DataFrame]:
-        """Load all relevant data from the database."""
-        print("Loading data from database...")
+        """Load all relevant data from the database with real-time focus."""
+        print("🔄 Loading REAL-TIME health surveillance data...")
+        print(f"📅 Analysis timestamp: {self.analysis_timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
 
         data = {}
 
-        # Load hospital data
+        # Load hospital data with real-time emphasis
         data['hospital'] = pd.read_sql_query("""
             SELECT * FROM hospital_data
-            ORDER BY date, zip_code
+            ORDER BY date DESC, zip_code
         """, self.conn)
         data['hospital']['date'] = pd.to_datetime(data['hospital']['date'])
+
+        # Check data freshness
+        if not data['hospital'].empty:
+            latest_hospital_date = data['hospital']['date'].max()
+            days_old = (self.analysis_timestamp - latest_hospital_date).days
+            print(f"🏥 Hospital ER data: {len(data['hospital'])} records (latest: {latest_hospital_date.strftime('%Y-%m-%d')}, {days_old} days ago)")
+        else:
+            print("⚠️  No hospital data available")
 
         # Load air quality data
         try:
@@ -61,21 +75,41 @@ class PatternDetector:
         except:
             data['cdc_ili'] = pd.DataFrame()
 
-        # Load NYC COVID data
+        # Load NYC COVID data (real-time surveillance)
         try:
             data['nyc_covid'] = pd.read_sql_query("""
-                SELECT date_of_interest, CASE_COUNT, HOSPITALIZED_COUNT, DEATH_COUNT
+                SELECT date_of_interest, CASE_COUNT, HOSPITALIZED_COUNT, DEATH_COUNT,
+                       BX_CASE_COUNT, BK_CASE_COUNT, MN_CASE_COUNT, QN_CASE_COUNT, SI_CASE_COUNT,
+                       BX_HOSPITALIZED_COUNT, BK_HOSPITALIZED_COUNT, MN_HOSPITALIZED_COUNT,
+                       QN_HOSPITALIZED_COUNT, SI_HOSPITALIZED_COUNT
                 FROM nyc_covid_data
-                ORDER BY date_of_interest
+                ORDER BY date_of_interest DESC
             """, self.conn)
             data['nyc_covid']['date_of_interest'] = pd.to_datetime(data['nyc_covid']['date_of_interest'])
-        except:
+
+            if not data['nyc_covid'].empty:
+                latest_covid_date = data['nyc_covid']['date_of_interest'].max()
+                days_old = (self.analysis_timestamp - latest_covid_date).days
+                print(f"🦠 NYC COVID surveillance: {len(data['nyc_covid'])} daily records (latest: {latest_covid_date.strftime('%Y-%m-%d')}, {days_old} days ago)")
+                print(f"   📊 Borough-level data available for all 5 NYC boroughs")
+            else:
+                print("⚠️  No NYC COVID data available")
+        except Exception as e:
+            print(f"⚠️  Error loading NYC COVID data: {e}")
             data['nyc_covid'] = pd.DataFrame()
 
-        print(f"Loaded hospital data: {len(data['hospital'])} records")
-        print(f"Loaded air quality data: {len(data['air_quality'])} records")
-        print(f"Loaded CDC ILI data: {len(data['cdc_ili'])} records")
-        print(f"Loaded NYC COVID data: {len(data['nyc_covid'])} records")
+        # Summary of real-time data status
+        print(f"\n📈 REAL-TIME DATA SUMMARY:")
+        print(f"   🏥 Hospital ER visits: {len(data['hospital'])} records")
+        print(f"   🌬️  Air quality: {len(data['air_quality'])} records")
+        print(f"   🤧 CDC ILI surveillance: {len(data['cdc_ili'])} records")
+        print(f"   🦠 NYC COVID surveillance: {len(data['nyc_covid'])} records")
+
+        # Calculate real-time window coverage
+        if not data['hospital'].empty:
+            cutoff_date = self.analysis_timestamp - timedelta(days=REAL_TIME_WINDOW_DAYS)
+            recent_hospital = data['hospital'][data['hospital']['date'] >= cutoff_date]
+            print(f"   ⏰ Recent data (last {REAL_TIME_WINDOW_DAYS} days): {len(recent_hospital)} hospital records")
 
         return data
 

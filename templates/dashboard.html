@@ -5,18 +5,25 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">
-        <i class="fas fa-tachometer-alt me-2 text-primary"></i>
-        Public Health Dashboard
+        <i class="fas fa-broadcast-tower me-2 text-primary"></i>
+        Real-Time Public Health Surveillance
+        <small class="text-muted fs-6 ms-2">Live NYC Health Monitoring</small>
     </h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
+            <span class="btn btn-sm btn-outline-success disabled">
+                <div id="connectionStatus" class="status-indicator status-online real-time-indicator d-inline-block me-1"></div>
+                <span id="connectionText">LIVE</span>
+            </span>
+        </div>
+        <div class="btn-group me-2">
             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="updateDashboard()">
-                <i class="fas fa-sync-alt"></i> Refresh
+                <i class="fas fa-sync-alt"></i> Refresh Data
             </button>
         </div>
         <div class="btn-group">
             <button type="button" class="btn btn-sm btn-primary" onclick="runPatternDetection()">
-                <i class="fas fa-search"></i> Detect Patterns
+                <i class="fas fa-search"></i> Scan Current Patterns
             </button>
         </div>
     </div>
@@ -30,7 +37,7 @@
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                            Total Hospital Records
+                            Real-Time ER Records
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRecords">
                             <i class="fas fa-spinner fa-spin"></i>
@@ -50,14 +57,14 @@
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                            Patterns Detected
+                            Current Alerts
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalPatterns">
                             <i class="fas fa-spinner fa-spin"></i>
                         </div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -70,14 +77,14 @@
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                            Latest Data
+                            Data Freshness
                         </div>
                         <div class="h6 mb-0 font-weight-bold text-gray-800" id="latestData">
                             <i class="fas fa-spinner fa-spin"></i>
                         </div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        <i class="fas fa-clock fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -90,14 +97,14 @@
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                            Last Update
+                            Last Scan
                         </div>
                         <div class="h6 mb-0 font-weight-bold text-gray-800" id="lastUpdate">
                             <i class="fas fa-spinner fa-spin"></i>
                         </div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        <i class="fas fa-sync-alt fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>

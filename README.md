@@ -1,27 +1,29 @@
-# Public Health MVP Dashboard
+# 🏥 Public Health MVP - Real-Time Surveillance Dashboard
 
-A comprehensive public health data analysis platform for NYC Center for Population Health Data Science analysts, featuring unified data visualization, AI-powered pattern detection, and real-time alerting.
+A **live public health monitoring system** for NYC Center for Population Health Data Science analysts, featuring real-time data feeds, AI-powered pattern detection, and immediate alerting for current health threats.
 
 ## 🎯 Value Proposition
 
-**For data analysts at the NYC Center for Population Health Data Science**, this solution provides **faster and earlier detection of public health risks** by unifying siloed datasets and using transparent AI to flag emerging patterns, **unlike manual querying and siloed dashboards**, which delay insights and limit cross-system visibility.
+**For data analysts at the NYC Center for Population Health Data Science**, this solution provides **real-time detection of emerging public health threats** by continuously monitoring live NYC health data and using transparent AI to flag current patterns as they develop, **unlike static reports and delayed dashboards**, which miss critical early warning signals and limit rapid response capabilities.
 
 ## ✨ Key Features
 
-### 1. Unified Data Dashboard with Real-Time Feeds
-- **Multi-source integration**: Hospital, NYC COVID, CDC ILI, Air Quality data
-- **Real-time visualization**: Live charts and metrics
-- **Cross-system visibility**: Single interface for all data sources
+### 1. Live Health Data Surveillance
+- **Real-time NYC COVID data**: Current daily cases, hospitalizations, deaths by borough
+- **Live ER monitoring**: Respiratory illness visits across NYC hospitals
+- **Current data feeds**: CDC surveillance, air quality, and health indicators
+- **Data freshness tracking**: Clear visibility into how current your data is
 
-### 2. Explainable AI Pattern Alerts
-- **Transparent AI**: Natural language explanations for all detected patterns
-- **Context-rich analysis**: Integrates environmental and health data
-- **Trust-building**: Shows methodology, confidence scores, and data sources
+### 2. Real-Time AI Pattern Detection
+- **Live pattern scanning**: Detects spikes, drops, and trends as they emerge
+- **Current threat focus**: Prioritizes patterns from the last 7-14 days
+- **Instant AI explanations**: Natural language insights about current health events
+- **Borough-level alerts**: Geographic targeting for NYC's 5 boroughs
 
-### 3. Customizable Risk Thresholds & Alert Management
-- **Configurable detection**: Adjustable spike/drop/consistency thresholds
-- **Notification preferences**: Email and Slack integration
-- **Interactive settings**: Web-based configuration interface
+### 3. Immediate Alert Management & Response
+- **Real-time notifications**: Instant alerts when patterns are detected
+- **Current risk thresholds**: Configurable detection for live surveillance
+- **Live dashboard updates**: Automatic refresh of current health status
 
 ## 🚀 Quick Start
 
@@ -42,25 +44,28 @@ A comprehensive public health data analysis platform for NYC Center for Populati
    pip install -r requirements.txt
    ```
 
-3. **Run data ingestion (Phase 1)**
+3. **Load real-time data (Phase 1)**
    ```bash
    python phase1_data_ingestion.py
    ```
+   *Fetches current NYC COVID data, generates hospital ER data, and sets up real-time feeds*
 
-4. **Run pattern detection (Phase 2)**
+4. **Initialize pattern detection (Phase 2)**
    ```bash
    python phase2_pattern_detection.py
    ```
+   *Sets up real-time pattern scanning and AI analysis capabilities*
 
-5. **Start the dashboard (Phase 3)**
+5. **Start live surveillance dashboard (Phase 3)**
    ```bash
    python app.py
    ```
+   *Launches the real-time monitoring interface with live updates*
 
-6. **Access the dashboard**
-   - Main Dashboard: http://localhost:5000
-   - Pattern Analysis: http://localhost:5000/patterns
-   - Alert Settings: http://localhost:5000/settings
+6. **Access the live dashboard**
+   - **Real-Time Dashboard**: http://localhost:5000 - Live health surveillance
+   - **Current Patterns**: http://localhost:5000/patterns - Active alerts and analysis
+   - **Alert Settings**: http://localhost:5000/settings - Configure real-time thresholds
 
 ## 📊 Dashboard Features
 

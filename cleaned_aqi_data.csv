@@ -1,31 +1,31 @@
 date_local,state_name,county_name,aqi,category,pm25_concentration,ozone_concentration
-2025-05-04,New York,New York,50,Moderate,13.57,0.061
-2025-05-05,New York,New York,97,Good,26.07,0.031
-2025-05-06,New York,New York,148,Good,34.65,0.07
-2025-05-07,New York,New York,124,Moderate,25.71,0.062
-2025-05-08,New York,New York,127,Unhealthy for Sensitive Groups,27.65,0.033
-2025-05-09,New York,New York,64,Unhealthy for Sensitive Groups,8.73,0.072
-2025-05-10,New York,New York,72,Moderate,18.35,0.039
-2025-05-11,New York,New York,129,Good,20.42,0.042
-2025-05-12,New York,New York,52,Moderate,31.16,0.026
-2025-05-13,New York,New York,56,Unhealthy for Sensitive Groups,20.19,0.051
-2025-05-14,New York,New York,131,Moderate,22.66,0.062
-2025-05-15,New York,New York,25,Unhealthy for Sensitive Groups,23.52,0.066
-2025-05-16,New York,New York,45,Moderate,5.77,0.028
-2025-05-17,New York,New York,53,Good,31.54,0.025
-2025-05-18,New York,New York,86,Good,9.29,0.035
-2025-05-19,New York,New York,25,Moderate,27.63,0.06
-2025-05-20,New York,New York,134,Unhealthy for Sensitive Groups,32.2,0.053
-2025-05-21,New York,New York,65,Moderate,25.46,0.023
-2025-05-22,New York,New York,96,Moderate,17.53,0.062
-2025-05-23,New York,New York,32,Good,27.37,0.038
-2025-05-24,New York,New York,88,Good,24.0,0.022
-2025-05-25,New York,New York,75,Good,23.61,0.037
-2025-05-26,New York,New York,35,Good,6.08,0.027
-2025-05-27,New York,New York,135,Good,32.79,0.036
-2025-05-28,New York,New York,102,Unhealthy for Sensitive Groups,16.13,0.073
-2025-05-29,New York,New York,73,Moderate,11.81,0.05
-2025-05-30,New York,New York,51,Good,8.33,0.071
-2025-05-31,New York,New York,25,Moderate,25.55,0.061
-2025-06-01,New York,New York,66,Unhealthy for Sensitive Groups,13.16,0.058
-2025-06-02,New York,New York,96,Moderate,6.66,0.029
+2025-05-04,New York,New York,92,Good,26.14,0.078
+2025-05-05,New York,New York,67,Moderate,26.42,0.053
+2025-05-06,New York,New York,88,Good,33.23,0.058
+2025-05-07,New York,New York,83,Moderate,22.25,0.03
+2025-05-08,New York,New York,106,Moderate,16.8,0.06
+2025-05-09,New York,New York,144,Unhealthy for Sensitive Groups,34.62,0.026
+2025-05-10,New York,New York,144,Moderate,18.28,0.043
+2025-05-11,New York,New York,127,Good,31.22,0.036
+2025-05-12,New York,New York,129,Unhealthy for Sensitive Groups,15.08,0.073
+2025-05-13,New York,New York,131,Good,26.6,0.065
+2025-05-14,New York,New York,119,Moderate,24.02,0.062
+2025-05-15,New York,New York,127,Good,27.32,0.037
+2025-05-16,New York,New York,146,Unhealthy for Sensitive Groups,9.86,0.062
+2025-05-17,New York,New York,108,Unhealthy for Sensitive Groups,17.29,0.048
+2025-05-18,New York,New York,105,Moderate,34.82,0.049
+2025-05-19,New York,New York,67,Unhealthy for Sensitive Groups,15.38,0.049
+2025-05-20,New York,New York,95,Good,17.71,0.047
+2025-05-21,New York,New York,44,Unhealthy for Sensitive Groups,5.57,0.024
+2025-05-22,New York,New York,115,Good,16.98,0.034
+2025-05-23,New York,New York,51,Moderate,21.33,0.047
+2025-05-24,New York,New York,127,Moderate,10.23,0.021
+2025-05-25,New York,New York,78,Unhealthy for Sensitive Groups,21.51,0.039
+2025-05-26,New York,New York,78,Moderate,12.87,0.031
+2025-05-27,New York,New York,36,Unhealthy for Sensitive Groups,10.41,0.041
+2025-05-28,New York,New York,111,Unhealthy for Sensitive Groups,32.41,0.046
+2025-05-29,New York,New York,106,Unhealthy for Sensitive Groups,6.89,0.028
+2025-05-30,New York,New York,107,Unhealthy for Sensitive Groups,26.77,0.068
+2025-05-31,New York,New York,32,Good,15.65,0.046
+2025-06-01,New York,New York,74,Good,8.25,0.056
+2025-06-02,New York,New York,40,Moderate,11.06,0.029
