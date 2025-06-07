@@ -160,7 +160,25 @@ class DashboardManager:
             """
 
             df = pd.read_sql_query(query, conn, params=[limit])
-            return df.to_dict('records')
+
+            # Convert to records and clean up any potential JSON issues
+            records = df.to_dict('records')
+
+            # Clean up each record to ensure JSON serialization works
+            cleaned_records = []
+            for record in records:
+                cleaned_record = {}
+                for key, value in record.items():
+                    if value is None:
+                        cleaned_record[key] = None
+                    elif isinstance(value, (int, float, bool)):
+                        cleaned_record[key] = value
+                    else:
+                        # Convert to string and clean up any problematic characters
+                        cleaned_record[key] = str(value).replace('\x00', '').strip()
+                cleaned_records.append(cleaned_record)
+
+            return cleaned_records
 
         finally:
             conn.close()
@@ -641,9 +659,21 @@ def api_hospital_data():
 @login_required
 def api_patterns():
     """API endpoint for recent patterns."""
-    limit = request.args.get('limit', 10, type=int)
-    patterns = dashboard_manager.get_recent_patterns(limit)
-    return jsonify(patterns)
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        patterns = dashboard_manager.get_recent_patterns(limit)
+
+        # Ensure we return valid JSON
+        if patterns is None:
+            patterns = []
+
+        return jsonify(patterns)
+
+    except Exception as e:
+        print(f"Error in api_patterns: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Failed to load patterns', 'message': str(e)}), 500
 
 @app.route('/api/settings', methods=['GET', 'POST'])
 @login_required
