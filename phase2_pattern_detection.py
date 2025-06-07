@@ -210,30 +210,62 @@ class PatternDetector:
             
             pattern_detected = None
             confidence = 0
-            
+
+            # Enhanced confidence calculation function
+            def calculate_enhanced_confidence(pct_change, rolling_std, current_value, pattern_type):
+                """Calculate confidence score based on multiple factors."""
+                base_confidence = min(abs(pct_change) * 100, 100)
+
+                # Factor 1: Statistical significance (using standard deviation)
+                if not pd.isna(rolling_std) and rolling_std > 0:
+                    z_score = abs(current_value - rolling_mean) / rolling_std
+                    stat_significance = min(z_score * 15, 40)  # Max 40 points for statistical significance
+                else:
+                    stat_significance = 0
+
+                # Factor 2: Magnitude bonus for extreme changes
+                magnitude_bonus = 0
+                if abs(pct_change) > 0.5:  # 50% change
+                    magnitude_bonus = 15
+                elif abs(pct_change) > 0.75:  # 75% change
+                    magnitude_bonus = 25
+                elif abs(pct_change) > 1.0:  # 100% change
+                    magnitude_bonus = 35
+
+                # Factor 3: Pattern type reliability
+                pattern_reliability = {
+                    'spike': 1.0,
+                    'drop': 0.95,
+                    'consistently_high': 1.1
+                }.get(pattern_type, 1.0)
+
+                # Calculate final confidence (max 100)
+                final_confidence = min((base_confidence + stat_significance + magnitude_bonus) * pattern_reliability, 100)
+                return round(final_confidence, 1)
+
             # Detect spike pattern
             if pct_change > spike_threshold:
                 pattern_detected = "spike"
-                confidence = min(pct_change * 100, 100)  # Cap at 100%
+                confidence = calculate_enhanced_confidence(pct_change, rolling_std, current_value, "spike")
 
             # Detect drop pattern
             elif pct_change < -drop_threshold:
                 pattern_detected = "drop"
-                confidence = min(abs(pct_change) * 100, 100)
+                confidence = calculate_enhanced_confidence(pct_change, rolling_std, current_value, "drop")
 
             # Detect consistently high pattern
             elif pct_change > consistently_high_threshold:
                 # Check if this has been consistently high
                 zip_code = row['zip_code']
                 date = row['date']
-                
+
                 # Get recent data for this zip code
                 recent_data = hospital_df[
-                    (hospital_df['zip_code'] == zip_code) & 
+                    (hospital_df['zip_code'] == zip_code) &
                     (hospital_df['date'] <= date) &
                     (hospital_df['date'] > date - timedelta(days=CONSISTENTLY_HIGH_DAYS))
                 ]
-                
+
                 if len(recent_data) >= CONSISTENTLY_HIGH_DAYS:
                     # Check if all recent days are above threshold
                     recent_changes = []
@@ -241,13 +273,22 @@ class PatternDetector:
                         if not pd.isna(recent_row['rolling_mean']) and recent_row['rolling_mean'] > 0:
                             recent_pct = (recent_row['er_visits_respiratory'] - recent_row['rolling_mean']) / recent_row['rolling_mean']
                             recent_changes.append(recent_pct)
-                    
+
                     if len(recent_changes) >= CONSISTENTLY_HIGH_DAYS and all(change > consistently_high_threshold for change in recent_changes):
                         pattern_detected = "consistently_high"
-                        confidence = min(np.mean(recent_changes) * 100, 100)
+                        avg_pct_change = np.mean(recent_changes)
+                        confidence = calculate_enhanced_confidence(avg_pct_change, rolling_std, current_value, "consistently_high")
             
             # If pattern detected, gather context and store
             if pattern_detected:
+                # Calculate confidence level category
+                if confidence >= 80:
+                    confidence_level = "HIGH"
+                elif confidence >= 60:
+                    confidence_level = "MEDIUM"
+                else:
+                    confidence_level = "LOW"
+
                 pattern_info = {
                     'date': row['date'],
                     'zip_code': row['zip_code'],
@@ -257,11 +298,12 @@ class PatternDetector:
                     'rolling_mean': rolling_mean,
                     'percentage_change': pct_change * 100,
                     'confidence_score': confidence,
+                    'confidence_level': confidence_level,
                     'context_data': self.gather_context_data(row['date'], row['zip_code'], data)
                 }
-                
+
                 patterns.append(pattern_info)
-                print(f"Pattern detected: {pattern_detected} in {row['zip_code']} on {row['date'].strftime('%Y-%m-%d')}")
+                print(f"Pattern detected: {pattern_detected} in {row['zip_code']} on {row['date'].strftime('%Y-%m-%d')} (Confidence: {confidence:.1f}% - {confidence_level})")
         
         return patterns
 
@@ -376,28 +418,81 @@ class PatternDetector:
         #     return "AI explanation unavailable due to response parsing error"
 
     def generate_fallback_explanation(self, pattern_info: Dict) -> str:
-        """Generate a fallback explanation when AI API is not available."""
+        """Generate an enhanced context-aware explanation when AI API is not available."""
         pattern_type = pattern_info['pattern_type']
         hospital = pattern_info['hospital_name']
         zip_code = pattern_info['zip_code']
         current_value = pattern_info['current_value']
         pct_change = pattern_info['percentage_change']
+        confidence = pattern_info['confidence_score']
+        confidence_level = pattern_info.get('confidence_level', 'MEDIUM')
         date_str = pattern_info['date'].strftime('%Y-%m-%d')
+        context = pattern_info['context_data']
+
+        # Build context-aware explanation
+        base_explanation = ""
+        context_factors = []
 
         if pattern_type == 'spike':
-            return f"Significant increase in respiratory ER visits detected at {hospital} (ZIP {zip_code}) on {date_str}. Current volume of {current_value} visits represents a {pct_change:+.1f}% increase above the 7-day average. This spike may indicate emerging respiratory illness outbreak, environmental factors, or seasonal patterns requiring immediate investigation and potential public health response."
+            base_explanation = f"🔴 SIGNIFICANT SPIKE DETECTED: Respiratory ER visits at {hospital} (ZIP {zip_code}) surged to {current_value} visits on {date_str}, representing a {pct_change:+.1f}% increase above the 7-day average."
+
+            # Add context-specific insights
+            if 'air_quality' in context:
+                aqi = context['air_quality']
+                if aqi['aqi'] > 100:
+                    context_factors.append(f"Poor air quality (AQI: {aqi['aqi']}) may be contributing to respiratory distress")
+                elif aqi['aqi'] > 50:
+                    context_factors.append(f"Moderate air quality (AQI: {aqi['aqi']}) could be a contributing factor")
+
+            if 'nyc_covid' in context:
+                covid = context['nyc_covid']
+                if covid['case_count'] > 100:
+                    context_factors.append(f"High COVID-19 activity ({covid['case_count']} cases) suggests viral respiratory illness spread")
+                elif covid['hospitalized_count'] > 10:
+                    context_factors.append(f"COVID-19 hospitalizations ({covid['hospitalized_count']}) indicate severe respiratory cases")
+
+            if 'cdc_ili' in context:
+                ili = context['cdc_ili']
+                if ili['ili_percent'] > 5:
+                    context_factors.append(f"Elevated influenza-like illness rates ({ili['ili_percent']}%) indicate broader respiratory illness circulation")
 
         elif pattern_type == 'drop':
-            return f"Notable decrease in respiratory ER visits observed at {hospital} (ZIP {zip_code}) on {date_str}. Current volume of {current_value} visits shows a {pct_change:+.1f}% decrease below the 7-day average. This drop could indicate improved community health, reduced disease transmission, or potential access barriers requiring monitoring to ensure healthcare availability."
+            base_explanation = f"🔵 NOTABLE DECREASE: Respiratory ER visits at {hospital} (ZIP {zip_code}) dropped to {current_value} visits on {date_str}, showing a {pct_change:+.1f}% decrease below the 7-day average."
+
+            if 'air_quality' in context:
+                aqi = context['air_quality']
+                if aqi['aqi'] < 50:
+                    context_factors.append(f"Good air quality (AQI: {aqi['aqi']}) may be supporting respiratory health")
+
+            if 'nyc_covid' in context:
+                covid = context['nyc_covid']
+                if covid['case_count'] < 50:
+                    context_factors.append(f"Low COVID-19 activity ({covid['case_count']} cases) suggests reduced viral transmission")
 
         elif pattern_type == 'consistently_high':
-            return f"Sustained elevation in respiratory ER visits identified at {hospital} (ZIP {zip_code}) on {date_str}. Current volume of {current_value} visits maintains a {pct_change:+.1f}% increase above average levels. This consistent pattern suggests ongoing respiratory health challenges in the community requiring sustained public health intervention and resource allocation."
+            base_explanation = f"🟡 SUSTAINED ELEVATION: Respiratory ER visits at {hospital} (ZIP {zip_code}) remain consistently elevated at {current_value} visits on {date_str}, maintaining a {pct_change:+.1f}% increase above average levels."
 
+            context_factors.append("This persistent pattern suggests ongoing community respiratory health challenges requiring sustained intervention")
+
+        # Combine base explanation with context
+        if context_factors:
+            context_text = ". ".join(context_factors)
+            full_explanation = f"{base_explanation} {context_text}."
         else:
-            return f"Unusual pattern detected in respiratory ER visits at {hospital} (ZIP {zip_code}) on {date_str}. Current volume of {current_value} visits shows a {pct_change:+.1f}% change from the 7-day average. This pattern warrants further investigation to determine underlying causes and appropriate public health response."
+            full_explanation = f"{base_explanation} This pattern warrants investigation to determine underlying causes."
+
+        # Add confidence and urgency indicators
+        if confidence >= 80:
+            urgency = "IMMEDIATE ATTENTION REQUIRED"
+        elif confidence >= 60:
+            urgency = "MONITORING RECOMMENDED"
+        else:
+            urgency = "FURTHER VALIDATION NEEDED"
+
+        return f"{full_explanation} Confidence: {confidence:.1f}% ({confidence_level}) - {urgency}."
 
     def construct_prompt(self, pattern_info: Dict) -> str:
-        """Construct a detailed prompt for the AI explanation."""
+        """Construct an enhanced, detailed prompt for the AI explanation."""
 
         date_str = pattern_info['date'].strftime('%Y-%m-%d')
         pattern_type = pattern_info['pattern_type']
@@ -406,52 +501,62 @@ class PatternDetector:
         current_value = pattern_info['current_value']
         rolling_mean = pattern_info['rolling_mean']
         pct_change = pattern_info['percentage_change']
+        confidence = pattern_info['confidence_score']
+        confidence_level = pattern_info.get('confidence_level', 'MEDIUM')
 
-        prompt = f"""
-Analyze this public health data pattern:
+        prompt = f"""You are a public health epidemiologist analyzing respiratory health patterns. Provide a clear, actionable explanation for this pattern.
 
-PATTERN DETECTED: {pattern_type.replace('_', ' ').title()}
-Date: {date_str}
-Location: ZIP code {zip_code}
-Hospital: {hospital}
-Current ER respiratory visits: {current_value}
-7-day average: {rolling_mean:.1f}
-Change from average: {pct_change:+.1f}%
+🚨 CRITICAL HEALTH PATTERN DETECTED 🚨
 
-CONTEXT DATA:"""
+PATTERN TYPE: {pattern_type.replace('_', ' ').title()} Alert
+DATE: {date_str}
+LOCATION: ZIP Code {zip_code} - {hospital}
+CURRENT ER RESPIRATORY VISITS: {current_value}
+7-DAY BASELINE: {rolling_mean:.1f} visits
+CHANGE FROM BASELINE: {pct_change:+.1f}%
+CONFIDENCE LEVEL: {confidence:.1f}% ({confidence_level})
+
+ENVIRONMENTAL & HEALTH CONTEXT:"""
 
         context = pattern_info['context_data']
 
-        # Add air quality context
+        # Add comprehensive context
         if 'air_quality' in context:
             aqi = context['air_quality']
+            air_status = "POOR" if aqi['aqi'] > 100 else "MODERATE" if aqi['aqi'] > 50 else "GOOD"
             prompt += f"""
-Air Quality (same day):
-- AQI: {aqi['aqi']} ({aqi['category']})
-- PM2.5: {aqi['pm25_concentration']} μg/m³
-- Ozone: {aqi['ozone_concentration']} ppm"""
+🌫️ AIR QUALITY ({air_status}):
+- Air Quality Index: {aqi['aqi']} ({aqi['category']})
+- PM2.5 Concentration: {aqi['pm25_concentration']} μg/m³
+- Ozone Level: {aqi['ozone_concentration']} ppm"""
 
-        # Add CDC ILI context
         if 'cdc_ili' in context:
             ili = context['cdc_ili']
+            ili_status = "HIGH" if ili['ili_percent'] > 5 else "ELEVATED" if ili['ili_percent'] > 3 else "NORMAL"
             prompt += f"""
-CDC Influenza-like Illness (same week):
-- ILI percentage: {ili['ili_percent']}%
-- Total patients: {ili['total_patients']}
-- ILI patients: {ili['ili_patients']}"""
+🤒 INFLUENZA-LIKE ILLNESS ({ili_status}):
+- ILI Percentage: {ili['ili_percent']}%
+- Total Patients Monitored: {ili['total_patients']:,}
+- ILI Cases: {ili['ili_patients']:,}"""
 
-        # Add NYC COVID context
         if 'nyc_covid' in context:
             covid = context['nyc_covid']
+            covid_status = "HIGH" if covid['case_count'] > 100 else "MODERATE" if covid['case_count'] > 50 else "LOW"
             prompt += f"""
-NYC COVID-19 (same day):
-- New cases: {covid['case_count']}
-- Hospitalizations: {covid['hospitalized_count']}
-- Deaths: {covid['death_count']}"""
+🦠 COVID-19 ACTIVITY ({covid_status}):
+- New Cases: {covid['case_count']:,}
+- Hospitalizations: {covid['hospitalized_count']:,}
+- Deaths: {covid['death_count']:,}"""
 
         prompt += f"""
 
-Please provide a brief explanation (2-3 sentences) for this {pattern_type.replace('_', ' ')} in respiratory ER visits. Consider potential relationships between the respiratory visits and the contextual health/environmental data provided."""
+ANALYSIS REQUIREMENTS:
+1. Explain the likely causes of this {pattern_type.replace('_', ' ')} pattern
+2. Identify potential correlations with environmental/health context data
+3. Assess public health implications and urgency level
+4. Recommend specific actions for health officials
+
+Provide a comprehensive but concise explanation (3-4 sentences) that a public health official can use for decision-making. Focus on actionable insights and potential interventions."""
 
         return prompt
 
@@ -470,6 +575,7 @@ Please provide a brief explanation (2-3 sentences) for this {pattern_type.replac
                 rolling_mean REAL,
                 percentage_change REAL,
                 confidence_score REAL,
+                confidence_level TEXT,
                 context_data TEXT,
                 ai_explanation TEXT
             )
@@ -496,8 +602,8 @@ Please provide a brief explanation (2-3 sentences) for this {pattern_type.replac
                 INSERT INTO pattern_detections
                 (detection_timestamp, date, zip_code, hospital_name, pattern_type,
                  current_value, rolling_mean, percentage_change, confidence_score,
-                 context_data, ai_explanation)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 confidence_level, context_data, ai_explanation)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 timestamp,
                 pattern['date'].strftime('%Y-%m-%d'),
@@ -508,6 +614,7 @@ Please provide a brief explanation (2-3 sentences) for this {pattern_type.replac
                 pattern['rolling_mean'],
                 pattern['percentage_change'],
                 pattern['confidence_score'],
+                pattern.get('confidence_level', 'MEDIUM'),
                 json.dumps(pattern['context_data']),
                 pattern['ai_explanation']
             ))
@@ -528,6 +635,7 @@ Please provide a brief explanation (2-3 sentences) for this {pattern_type.replac
                 'rolling_mean': round(pattern['rolling_mean'], 2),
                 'percentage_change': round(pattern['percentage_change'], 2),
                 'confidence_score': round(pattern['confidence_score'], 2),
+                'confidence_level': pattern.get('confidence_level', 'MEDIUM'),
                 'ai_explanation': pattern['ai_explanation']
             })
 
@@ -580,15 +688,18 @@ Please provide a brief explanation (2-3 sentences) for this {pattern_type.replac
 
     def display_pattern_result(self, pattern: Dict):
         """Display a single pattern result in a formatted way."""
-        print("\n" + "="*60)
-        print(f"PATTERN DETECTED: {pattern['pattern_type'].replace('_', ' ').upper()}")
-        print("="*60)
-        print(f"Date: {pattern['date'].strftime('%Y-%m-%d')}")
-        print(f"Location: ZIP {pattern['zip_code']} ({pattern['hospital_name']})")
-        print(f"ER Respiratory Visits: {pattern['current_value']}")
-        print(f"7-day Average: {pattern['rolling_mean']:.1f}")
-        print(f"Change: {pattern['percentage_change']:+.1f}%")
-        print(f"Confidence: {pattern['confidence_score']:.1f}%")
+        confidence_level = pattern.get('confidence_level', 'MEDIUM')
+        confidence_emoji = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(confidence_level, "🟡")
+
+        print("\n" + "="*70)
+        print(f"{confidence_emoji} PATTERN DETECTED: {pattern['pattern_type'].replace('_', ' ').upper()}")
+        print("="*70)
+        print(f"📅 Date: {pattern['date'].strftime('%Y-%m-%d')}")
+        print(f"📍 Location: ZIP {pattern['zip_code']} ({pattern['hospital_name']})")
+        print(f"🏥 ER Respiratory Visits: {pattern['current_value']}")
+        print(f"📊 7-day Average: {pattern['rolling_mean']:.1f}")
+        print(f"📈 Change: {pattern['percentage_change']:+.1f}%")
+        print(f"🎯 Confidence: {pattern['confidence_score']:.1f}% ({confidence_level})")
 
         # Display context if available
         context = pattern['context_data']
