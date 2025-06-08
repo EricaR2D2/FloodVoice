@@ -61,28 +61,29 @@ class ForecastingGate1Validator:
         
         try:
             conn = sqlite3.connect('public_health_data.db')
-            # First try to get test patterns with sufficient data
+            # First try to get NYC COVID real patterns with sufficient data
             query = """
                 SELECT id, date, zip_code, hospital_name, pattern_type,
                        current_value, percentage_change
                 FROM pattern_detections
-                WHERE hospital_name LIKE 'Test Forecasting%'
+                WHERE hospital_name IN ('Bronx Medical Center', 'Brooklyn Health Center',
+                                       'Manhattan Hospital', 'Queens Medical Center', 'Staten Island Hospital')
                 ORDER BY id DESC
                 LIMIT 10
             """
             df = pd.read_sql_query(query, conn)
 
-            # If no test patterns, fall back to regular patterns
+            # If no NYC patterns, fall back to test patterns
             if len(df) == 0:
                 query = """
                     SELECT id, date, zip_code, hospital_name, pattern_type,
                            current_value, percentage_change
                     FROM pattern_detections
+                    WHERE hospital_name LIKE 'Test Forecasting%'
                     ORDER BY id DESC
-                    LIMIT 20
+                    LIMIT 10
                 """
                 df = pd.read_sql_query(query, conn)
-            df = pd.read_sql_query(query, conn)
             conn.close()
             
             if len(df) == 0:
