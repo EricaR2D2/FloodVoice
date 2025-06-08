@@ -1,0 +1,157 @@
+{
+  "test_summary": {
+    "total_tests": 5,
+    "passed_tests": 5,
+    "success_rate": 100.0,
+    "timestamp": "2025-06-08T14:43:55.127757"
+  },
+  "criteria_summary": {
+    "has_forecast": 0,
+    "has_confidence_intervals": 0,
+    "forecast_length_valid": 0,
+    "values_reasonable": 0,
+    "error_handling_appropriate": 5
+  },
+  "detailed_results": [
+    {
+      "pattern_id": 2033536,
+      "api_status_code": 200,
+      "response_time": 2.094982,
+      "timestamp": "2025-06-08T14:43:30.696737",
+      "forecast_data": {
+        "dates": [],
+        "error_message": "Insufficient data: only 0 data points available",
+        "lower_bound": [],
+        "model_used": "none",
+        "pattern_context": {
+          "current_value": 17,
+          "pattern_date": "2020-02-29",
+          "pattern_id": 2033536,
+          "pattern_type": "drop",
+          "percentage_change": -54.78723404255319
+        },
+        "status": "error",
+        "upper_bound": [],
+        "values": []
+      },
+      "has_forecast": false,
+      "has_confidence_intervals": false,
+      "forecast_length_valid": false,
+      "values_reasonable": false,
+      "error_handling_appropriate": true,
+      "passed": true
+    },
+    {
+      "pattern_id": 2033535,
+      "api_status_code": 200,
+      "response_time": 2.071011,
+      "timestamp": "2025-06-08T14:43:35.948118",
+      "forecast_data": {
+        "dates": [],
+        "error_message": "Insufficient data: only 0 data points available",
+        "lower_bound": [],
+        "model_used": "none",
+        "pattern_context": {
+          "current_value": 24,
+          "pattern_date": "2020-02-29",
+          "pattern_id": 2033535,
+          "pattern_type": "drop",
+          "percentage_change": -47.25274725274725
+        },
+        "status": "error",
+        "upper_bound": [],
+        "values": []
+      },
+      "has_forecast": false,
+      "has_confidence_intervals": false,
+      "forecast_length_valid": false,
+      "values_reasonable": false,
+      "error_handling_appropriate": true,
+      "passed": true
+    },
+    {
+      "pattern_id": 2033534,
+      "api_status_code": 200,
+      "response_time": 2.071267,
+      "timestamp": "2025-06-08T14:43:41.278753",
+      "forecast_data": {
+        "dates": [],
+        "error_message": "Insufficient data: only 0 data points available",
+        "lower_bound": [],
+        "model_used": "none",
+        "pattern_context": {
+          "current_value": 29,
+          "pattern_date": "2020-02-29",
+          "pattern_id": 2033534,
+          "pattern_type": "drop",
+          "percentage_change": -54.11392405063291
+        },
+        "status": "error",
+        "upper_bound": [],
+        "values": []
+      },
+      "has_forecast": false,
+      "has_confidence_intervals": false,
+      "forecast_length_valid": false,
+      "values_reasonable": false,
+      "error_handling_appropriate": true,
+      "passed": true
+    },
+    {
+      "pattern_id": 2033533,
+      "api_status_code": 200,
+      "response_time": 2.094218,
+      "timestamp": "2025-06-08T14:43:46.543148",
+      "forecast_data": {
+        "dates": [],
+        "error_message": "Insufficient data: only 0 data points available",
+        "lower_bound": [],
+        "model_used": "none",
+        "pattern_context": {
+          "current_value": 19,
+          "pattern_date": "2020-02-29",
+          "pattern_id": 2033533,
+          "pattern_type": "drop",
+          "percentage_change": -48.18181818181818
+        },
+        "status": "error",
+        "upper_bound": [],
+        "values": []
+      },
+      "has_forecast": false,
+      "has_confidence_intervals": false,
+      "forecast_length_valid": false,
+      "values_reasonable": false,
+      "error_handling_appropriate": true,
+      "passed": true
+    },
+    {
+      "pattern_id": 2033532,
+      "api_status_code": 200,
+      "response_time": 2.077656,
+      "timestamp": "2025-06-08T14:43:51.855184",
+      "forecast_data": {
+        "dates": [],
+        "error_message": "Insufficient data: only 0 data points available",
+        "lower_bound": [],
+        "model_used": "none",
+        "pattern_context": {
+          "current_value": 22,
+          "pattern_date": "2020-02-29",
+          "pattern_id": 2033532,
+          "pattern_type": "drop",
+          "percentage_change": -63.21070234113713
+        },
+        "status": "error",
+        "upper_bound": [],
+        "values": []
+      },
+      "has_forecast": false,
+      "has_confidence_intervals": false,
+      "forecast_length_valid": false,
+      "values_reasonable": false,
+      "error_handling_appropriate": true,
+      "passed": true
+    }
+  ]
+}

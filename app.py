@@ -213,18 +213,24 @@ class DashboardManager:
             conn.close()
 
     def generate_pattern_forecast(self, pattern_id):
-        """Generate forecast for a specific pattern."""
+        """Generate enhanced forecast for a specific pattern with confidence intervals."""
         pattern = self.get_pattern_by_id(pattern_id)
         if not pattern:
             return {'status': 'error', 'message': 'Pattern not found'}
 
         try:
+            # Generate forecast with enhanced confidence intervals
             forecast = self.forecasting_engine.generate_forecast(
                 hospital_name=pattern['hospital_name'],
                 zip_code=pattern['zip_code'],
                 forecast_days=7,
                 days_back=30
             )
+
+            # Add enhanced interpretation
+            if forecast['status'] == 'success':
+                interpretation = self.forecasting_engine.get_enhanced_forecast_interpretation(forecast)
+                forecast['interpretation'] = interpretation
 
             # Add pattern context to forecast
             forecast['pattern_context'] = {

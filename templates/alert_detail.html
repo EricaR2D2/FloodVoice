@@ -201,6 +201,30 @@
 </div>
 {% endif %}
 
+<!-- Enhanced Forecasting Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    7-Day Forecast with Confidence Intervals
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="forecastSection">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading forecast...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Generating enhanced forecast with confidence intervals...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Detection Metadata -->
 <div class="row">
     <div class="col-12">
@@ -229,13 +253,378 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Add any additional JavaScript for the alert detail page here
+// Enhanced forecast loading and display
 document.addEventListener('DOMContentLoaded', function() {
     // Ensure map is properly sized
     setTimeout(function() {
         window.dispatchEvent(new Event('resize'));
     }, 100);
+
+    // Load enhanced forecast
+    loadEnhancedForecast();
 });
+
+function loadEnhancedForecast() {
+    const patternId = {{ pattern.id }};
+
+    fetch(`/api/pattern/${patternId}/forecast`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(forecast => {
+            displayEnhancedForecast(forecast);
+        })
+        .catch(error => {
+            console.error('Error loading forecast:', error);
+            displayForecastError(error.message);
+        });
+}
+
+function displayEnhancedForecast(forecast) {
+    const forecastSection = document.getElementById('forecastSection');
+
+    if (forecast.status === 'error') {
+        displayForecastError(forecast.message || forecast.error_message);
+        return;
+    }
+
+    const interpretation = forecast.interpretation || {};
+
+    forecastSection.innerHTML = `
+        <!-- Forecast Summary -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="alert alert-info border-start border-primary border-4">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Forecast Summary
+                    </h6>
+                    <p class="mb-2"><strong>${interpretation.summary || 'Forecast generated successfully'}</strong></p>
+                    <p class="mb-0 text-muted">${interpretation.confidence_interpretation || 'Confidence intervals calculated'}</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-light">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Model Information</h6>
+                        <p class="mb-1"><strong>Model:</strong> ${forecast.model_used || 'Unknown'}</p>
+                        <p class="mb-1"><strong>Data Points:</strong> ${forecast.historical_data_points || 'N/A'}</p>
+                        <p class="mb-0"><strong>Confidence:</strong> ${Math.round((forecast.confidence_level || 0.95) * 100)}%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Assessment -->
+        ${interpretation.risk_assessment ? `
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert ${getRiskAlertClass(interpretation.key_metrics?.risk_level)} border-start border-4">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Risk Assessment
+                    </h6>
+                    <p class="mb-2">${interpretation.risk_assessment}</p>
+                    ${interpretation.trend_analysis ? `<p class="mb-0"><strong>Trend:</strong> ${interpretation.trend_analysis}</p>` : ''}
+                </div>
+            </div>
+        </div>
+        ` : ''}
+
+        <!-- Forecast Chart -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-chart-area me-2"></i>
+                            7-Day Forecast with Confidence Intervals
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 400px;">
+                            <canvas id="enhancedForecastChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Forecast Table -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-table me-2"></i>
+                            Daily Forecast Values with Confidence Intervals
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Day</th>
+                                        <th>Predicted Visits</th>
+                                        <th>95% Confidence Interval</th>
+                                        <th>Range Width</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="enhancedForecastTable">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        ${interpretation.recommendations && interpretation.recommendations.length > 0 ? `
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            Recommendations
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            ${interpretation.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        ` : ''}
+    `;
+
+    // Populate the detailed forecast table
+    populateEnhancedForecastTable(forecast);
+
+    // Create the enhanced forecast chart
+    createEnhancedForecastChart(forecast);
+}
+
+function populateEnhancedForecastTable(forecast) {
+    const tableBody = document.getElementById('enhancedForecastTable');
+    if (!tableBody || !forecast.dates || !forecast.values) return;
+
+    let html = '';
+    for (let i = 0; i < forecast.dates.length; i++) {
+        const date = new Date(forecast.dates[i]);
+        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+        const value = forecast.values[i];
+        const lower = forecast.lower_bound ? forecast.lower_bound[i] : null;
+        const upper = forecast.upper_bound ? forecast.upper_bound[i] : null;
+
+        const confidenceInterval = (lower !== null && upper !== null)
+            ? `${lower.toFixed(1)} - ${upper.toFixed(1)}`
+            : 'N/A';
+
+        const rangeWidth = (lower !== null && upper !== null)
+            ? (upper - lower).toFixed(1)
+            : 'N/A';
+
+        html += `
+            <tr>
+                <td>${dateStr}</td>
+                <td><span class="badge bg-secondary">${dayName}</span></td>
+                <td><strong>${value.toFixed(1)}</strong> visits</td>
+                <td class="text-muted">${confidenceInterval}</td>
+                <td class="text-muted">±${rangeWidth}</td>
+            </tr>
+        `;
+    }
+    tableBody.innerHTML = html;
+}
+
+function createEnhancedForecastChart(forecast) {
+    const ctx = document.getElementById('enhancedForecastChart');
+    if (!ctx || !forecast.dates || !forecast.values) return;
+
+    const labels = forecast.dates.map(d => {
+        const date = new Date(d);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+
+    const datasets = [
+        {
+            label: 'Predicted Visits',
+            data: forecast.values,
+            borderColor: 'rgb(54, 162, 235)',
+            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+            borderWidth: 3,
+            fill: false,
+            tension: 0.1
+        }
+    ];
+
+    // Add confidence interval bands if available
+    if (forecast.lower_bound && forecast.upper_bound) {
+        datasets.push({
+            label: '95% Confidence Interval',
+            data: forecast.upper_bound,
+            borderColor: 'rgba(54, 162, 235, 0.3)',
+            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+            borderWidth: 1,
+            fill: '+1',
+            tension: 0.1,
+            pointRadius: 0
+        });
+
+        datasets.push({
+            label: 'Lower Bound',
+            data: forecast.lower_bound,
+            borderColor: 'rgba(54, 162, 235, 0.3)',
+            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+            borderWidth: 1,
+            fill: false,
+            tension: 0.1,
+            pointRadius: 0
+        });
+    }
+
+    // Add prediction intervals if available (wider bands)
+    if (forecast.prediction_lower && forecast.prediction_upper) {
+        datasets.push({
+            label: '95% Prediction Interval',
+            data: forecast.prediction_upper,
+            borderColor: 'rgba(255, 99, 132, 0.2)',
+            backgroundColor: 'rgba(255, 99, 132, 0.05)',
+            borderWidth: 1,
+            borderDash: [5, 5],
+            fill: '+1',
+            tension: 0.1,
+            pointRadius: 0
+        });
+
+        datasets.push({
+            label: 'Prediction Lower',
+            data: forecast.prediction_lower,
+            borderColor: 'rgba(255, 99, 132, 0.2)',
+            backgroundColor: 'rgba(255, 99, 132, 0.05)',
+            borderWidth: 1,
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.1,
+            pointRadius: 0
+        });
+    }
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `7-Day Forecast: ${forecast.hospital_name} (ZIP ${forecast.zip_code})`
+                },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        filter: function(legendItem, chartData) {
+                            // Hide the lower bound labels from legend
+                            return !legendItem.text.includes('Lower');
+                        }
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        title: function(context) {
+                            const date = new Date(forecast.dates[context[0].dataIndex]);
+                            return date.toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
+                        },
+                        label: function(context) {
+                            const datasetLabel = context.dataset.label;
+                            const value = context.parsed.y;
+
+                            if (datasetLabel === 'Predicted Visits') {
+                                const index = context.dataIndex;
+                                const lower = forecast.lower_bound ? forecast.lower_bound[index] : null;
+                                const upper = forecast.upper_bound ? forecast.upper_bound[index] : null;
+
+                                if (lower !== null && upper !== null) {
+                                    return `${datasetLabel}: ${value.toFixed(1)} visits (95% CI: ${lower.toFixed(1)}-${upper.toFixed(1)})`;
+                                } else {
+                                    return `${datasetLabel}: ${value.toFixed(1)} visits`;
+                                }
+                            }
+
+                            return `${datasetLabel}: ${value.toFixed(1)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'ER Respiratory Visits'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+}
+
+function getRiskAlertClass(riskLevel) {
+    switch(riskLevel?.toUpperCase()) {
+        case 'HIGH': return 'alert-danger';
+        case 'MEDIUM': return 'alert-warning';
+        case 'LOW': return 'alert-success';
+        default: return 'alert-info';
+    }
+}
+
+function displayForecastError(errorMessage) {
+    const forecastSection = document.getElementById('forecastSection');
+    forecastSection.innerHTML = `
+        <div class="alert alert-danger">
+            <h6 class="alert-heading">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Forecast Generation Failed
+            </h6>
+            <p class="mb-0">${errorMessage}</p>
+        </div>
+    `;
+}
 </script>
 {% endblock %}
