@@ -26,6 +26,6 @@ folium>=0.14.0
 # Development and testing
 # pytest>=7.0.0  # Uncomment for testing
 
-# Optional: Production deployment
-# gunicorn>=20.1.0  # Uncomment for production WSGI server
-# eventlet>=0.33.0  # Uncomment for production WebSocket support
+# Production deployment
+gunicorn>=20.1.0
+eventlet>=0.33.0

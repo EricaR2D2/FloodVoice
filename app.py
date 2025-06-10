@@ -14,7 +14,7 @@ from forecasting_engine import ForecastingEngine
 from models import User, init_user_db
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'public_health_mvp_secret_key_2024'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'public_health_mvp_secret_key_2024')
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Initialize Flask-Login
@@ -883,9 +883,17 @@ if __name__ == '__main__':
     update_thread.start()
 
     print("🚀 Public Health MVP Dashboard Starting...")
-    print("📊 Dashboard: http://localhost:5000")
-    print("⚙️  Settings: http://localhost:5000/settings")
-    print("🔍 Patterns: http://localhost:5000/patterns")
-    print("🔐 Login: http://localhost:5000/login")
 
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    # Get port from environment variable (Heroku sets this)
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
+
+    if debug_mode:
+        print("📊 Dashboard: http://localhost:5000")
+        print("⚙️  Settings: http://localhost:5000/settings")
+        print("🔍 Patterns: http://localhost:5000/patterns")
+        print("🔐 Login: http://localhost:5000/login")
+    else:
+        print("🌐 Running in production mode")
+
+    socketio.run(app, debug=debug_mode, host='0.0.0.0', port=port)
