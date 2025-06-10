@@ -138,6 +138,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'map_view' %}active{% endif %}" href="/map">
+                                <i class="fas fa-map-marked-alt me-2"></i>
+                                Health Map
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'settings_page' %}active{% endif %}" href="/settings">
                                 <i class="fas fa-cog me-2"></i>
                                 Alert Settings

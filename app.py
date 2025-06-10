@@ -398,6 +398,171 @@ def create_alert_map(zip_code, pattern_data):
         ).add_to(m)
         return m._repr_html_()
 
+def create_enhanced_layered_map(hospital_df, tick_df, weather_df):
+    """Create an enhanced map with multiple data layers for weather, tick diseases, and hospital data."""
+    try:
+        # Create base map centered on NYC
+        nyc_map = folium.Map(
+            location=[40.7128, -73.9060],
+            zoom_start=11,
+            tiles='OpenStreetMap'
+        )
+
+        # Enhanced ZIP code coordinates with more locations
+        zip_coords = {
+            '10001': [40.7505, -73.9934],  # Manhattan
+            '10451': [40.8176, -73.9482],  # Bronx
+            '11101': [40.7505, -73.9365],  # Queens
+            '11201': [40.6892, -73.9442],  # Brooklyn
+            '10301': [40.6323, -74.0754],  # Staten Island
+            # Additional tick-active ZIP codes
+            '10302': [40.6178, -74.1377],  # Staten Island West
+            '10303': [40.6415, -74.1134],  # Staten Island Central
+            '10304': [40.5817, -74.0857],  # Staten Island East
+            '10305': [40.5928, -74.0707],  # Staten Island South
+            '10463': [40.8848, -73.9085],  # Bronx Riverdale
+            '10471': [40.8958, -73.8958],  # Bronx Fieldston
+            '10466': [40.8902, -73.8485],  # Bronx Pelham
+            '10467': [40.8736, -73.8780],  # Bronx Norwood
+            '11354': [40.7677, -73.8370],  # Queens Flushing
+            '11355': [40.7677, -73.8370],  # Queens Whitestone
+            '11356': [40.7864, -73.8370],  # Queens College Point
+            '11209': [40.6221, -74.0307],  # Brooklyn Bay Ridge
+            '11220': [40.6415, -74.0134],  # Brooklyn Sunset Park
+            '10024': [40.7831, -73.9712],  # Manhattan Upper West Side
+            '10025': [40.7957, -73.9667]   # Manhattan Morningside Heights
+        }
+
+        # Create feature groups for different layers
+        hospital_layer = folium.FeatureGroup(name="🏥 Hospital ER Data", show=True)
+        tick_layer = folium.FeatureGroup(name="🦟 Tick Disease Risk", show=True)
+        weather_layer = folium.FeatureGroup(name="🌡️ Weather Conditions", show=True)
+
+        # Add hospital markers to hospital layer
+        for _, row in hospital_df.iterrows():
+            if row['zip_code'] in zip_coords:
+                coords = zip_coords[row['zip_code']]
+
+                # Color based on respiratory visit percentage
+                if row['respiratory_pct'] > 30:
+                    color = 'red'
+                elif row['respiratory_pct'] > 20:
+                    color = 'orange'
+                else:
+                    color = 'green'
+
+                folium.CircleMarker(
+                    location=coords,
+                    radius=max(5, min(20, row['visit_count'] / 10)),
+                    popup=f"""
+                    <b>{row['hospital_name']}</b><br>
+                    ZIP: {row['zip_code']}<br>
+                    Total Visits: {row['visit_count']}<br>
+                    Respiratory: {row['respiratory_pct']:.1f}%
+                    """,
+                    color=color,
+                    fillColor=color,
+                    fillOpacity=0.7,
+                    tooltip=f"{row['hospital_name']}: {row['visit_count']} visits"
+                ).add_to(hospital_layer)
+
+        # Add tick disease risk markers to tick layer
+        for _, row in tick_df.iterrows():
+            if row['zip_code'] in zip_coords:
+                coords = zip_coords[row['zip_code']]
+
+                # Risk level based on case count
+                if row['tick_cases'] > 10:
+                    risk_color = 'darkred'
+                    risk_level = 'High'
+                elif row['tick_cases'] > 5:
+                    risk_color = 'orange'
+                    risk_level = 'Medium'
+                else:
+                    risk_color = 'yellow'
+                    risk_level = 'Low'
+
+                folium.CircleMarker(
+                    location=coords,
+                    radius=max(8, min(25, row['tick_cases'] * 2)),
+                    popup=f"""
+                    <b>Tick Disease Risk</b><br>
+                    ZIP: {row['zip_code']}<br>
+                    Cases (30 days): {row['tick_cases']}<br>
+                    Severe Cases: {row['severe_cases']}<br>
+                    Risk Level: {risk_level}
+                    """,
+                    color=risk_color,
+                    fillColor=risk_color,
+                    fillOpacity=0.5,
+                    tooltip=f"ZIP {row['zip_code']}: {row['tick_cases']} tick cases"
+                ).add_to(tick_layer)
+
+        # Add weather station markers to weather layer
+        weather_coords = {
+            'Central Park': [40.7829, -73.9654],
+            'LaGuardia Airport': [40.7769, -73.8740],
+            'JFK Airport': [40.6413, -73.7781],
+            'Brooklyn': [40.6501, -73.9496],
+            'Staten Island': [40.5795, -74.1502]
+        }
+
+        for _, row in weather_df.iterrows():
+            if row['station_name'] in weather_coords:
+                coords = weather_coords[row['station_name']]
+
+                # Color based on tick risk score
+                if row['avg_tick_risk'] > 70:
+                    weather_color = 'red'
+                elif row['avg_tick_risk'] > 40:
+                    weather_color = 'orange'
+                else:
+                    weather_color = 'blue'
+
+                folium.Marker(
+                    location=coords,
+                    popup=f"""
+                    <b>{row['station_name']} Weather</b><br>
+                    Avg Temperature: {row['avg_temp']:.1f}°F<br>
+                    Avg Humidity: {row['avg_humidity']:.1f}%<br>
+                    Tick Risk Score: {row['avg_tick_risk']:.0f}/100
+                    """,
+                    tooltip=f"{row['station_name']}: {row['avg_temp']:.1f}°F",
+                    icon=folium.Icon(icon='thermometer-half', prefix='fa', color=weather_color)
+                ).add_to(weather_layer)
+
+        # Add all layers to map
+        hospital_layer.add_to(nyc_map)
+        tick_layer.add_to(nyc_map)
+        weather_layer.add_to(nyc_map)
+
+        # Add layer control
+        folium.LayerControl().add_to(nyc_map)
+
+        # Add enhanced legend
+        legend_html = '''
+        <div style="position: fixed;
+                    bottom: 50px; left: 50px; width: 250px; height: 180px;
+                    background-color: white; border:2px solid grey; z-index:9999;
+                    font-size:12px; padding: 10px; border-radius: 5px;">
+        <p><b>🗺️ NYC Health Surveillance Map</b></p>
+        <p><b>Hospital ER Data:</b></p>
+        <p>🔴 High Respiratory (>30%) | 🟠 Medium (20-30%) | 🟢 Low (<20%)</p>
+        <p><b>Tick Disease Risk:</b></p>
+        <p>🔴 High (>10 cases) | 🟠 Medium (5-10) | 🟡 Low (<5)</p>
+        <p><b>Weather Stations:</b></p>
+        <p>🌡️ Tick Risk: 🔴 High (>70) | 🟠 Med (40-70) | 🔵 Low (<40)</p>
+        <p><i>Click layers to toggle visibility</i></p>
+        </div>
+        '''
+        nyc_map.get_root().html.add_child(folium.Element(legend_html))
+
+        return nyc_map._repr_html_()
+
+    except Exception as e:
+        print(f"Error creating enhanced layered map: {e}")
+        return "<p>Error loading enhanced map</p>"
+
 def create_overview_map(patterns):
     """Create an overview map showing all recent alert locations."""
     try:
@@ -800,6 +965,59 @@ def debug_page():
         """
     except Exception as e:
         return f"<h1>Debug Error</h1><p>{str(e)}</p><p><a href='/'>Back to Dashboard</a></p>"
+
+@app.route('/map')
+@login_required
+def map_view():
+    """Enhanced interactive map with multiple data layers"""
+    try:
+        conn = sqlite3.connect('public_health_data.db')
+
+        # Get recent hospital data for map markers
+        hospital_query = """
+            SELECT zip_code, hospital_name, COUNT(*) as visit_count,
+                   AVG(CASE WHEN visit_type = 'Respiratory' THEN 1 ELSE 0 END) * 100 as respiratory_pct
+            FROM hospital_er_visits
+            WHERE date >= date('now', '-7 days')
+            GROUP BY zip_code, hospital_name
+            ORDER BY visit_count DESC
+        """
+
+        hospital_df = pd.read_sql_query(hospital_query, conn)
+
+        # Get tick disease data for risk overlay
+        tick_query = """
+            SELECT zip_code, COUNT(*) as tick_cases,
+                   COUNT(CASE WHEN severity = 'Severe' THEN 1 END) as severe_cases
+            FROM tick_disease_surveillance
+            WHERE report_date >= date('now', '-30 days')
+            GROUP BY zip_code
+        """
+
+        tick_df = pd.read_sql_query(tick_query, conn)
+
+        # Get weather data for environmental overlay
+        weather_query = """
+            SELECT station_name, AVG(temp_avg_f) as avg_temp,
+                   AVG(humidity_percent) as avg_humidity,
+                   AVG(tick_risk_score) as avg_tick_risk
+            FROM weather_data
+            WHERE date >= date('now', '-7 days')
+            GROUP BY station_name
+        """
+
+        weather_df = pd.read_sql_query(weather_query, conn)
+
+        # Create enhanced layered map
+        map_html = create_enhanced_layered_map(hospital_df, tick_df, weather_df)
+
+        conn.close()
+
+        return render_template('map.html', map_html=map_html)
+
+    except Exception as e:
+        print(f"Error in map view: {e}")
+        return render_template('map.html', map_html="<p>Error loading map</p>")
 
 @app.route('/api/dashboard-map')
 @login_required
