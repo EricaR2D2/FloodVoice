@@ -973,36 +973,38 @@ def map_view():
     try:
         conn = sqlite3.connect('public_health_data.db')
 
-        # Get recent hospital data for map markers
+        # Get recent hospital data for map markers (use broader range since data may be older)
         hospital_query = """
             SELECT zip_code, hospital_name, COUNT(*) as visit_count,
-                   AVG(CASE WHEN visit_type = 'Respiratory' THEN 1 ELSE 0 END) * 100 as respiratory_pct
-            FROM hospital_er_visits
-            WHERE date >= date('now', '-7 days')
+                   AVG(CASE WHEN er_visits_respiratory > 0 THEN
+                       (CAST(er_visits_respiratory AS FLOAT) / CAST(total_er_visits AS FLOAT)) * 100
+                       ELSE 0 END) as respiratory_pct
+            FROM hospital_data
+            WHERE date >= date('now', '-30 days')
             GROUP BY zip_code, hospital_name
             ORDER BY visit_count DESC
+            LIMIT 20
         """
 
         hospital_df = pd.read_sql_query(hospital_query, conn)
 
-        # Get tick disease data for risk overlay
+        # Get tick disease data for risk overlay (all available data)
         tick_query = """
             SELECT zip_code, COUNT(*) as tick_cases,
                    COUNT(CASE WHEN severity = 'Severe' THEN 1 END) as severe_cases
             FROM tick_disease_surveillance
-            WHERE report_date >= date('now', '-30 days')
             GROUP BY zip_code
+            ORDER BY tick_cases DESC
         """
 
         tick_df = pd.read_sql_query(tick_query, conn)
 
-        # Get weather data for environmental overlay
+        # Get weather data for environmental overlay (all available data)
         weather_query = """
             SELECT station_name, AVG(temp_avg_f) as avg_temp,
                    AVG(humidity_percent) as avg_humidity,
                    AVG(tick_risk_score) as avg_tick_risk
             FROM weather_data
-            WHERE date >= date('now', '-7 days')
             GROUP BY station_name
         """
 
