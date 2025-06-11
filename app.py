@@ -58,7 +58,7 @@ class DashboardManager:
         try:
             print("📊 Getting counts...")
             # Get total records count
-            hospital_count_df = pd.read_sql_query("SELECT COUNT(*) as count FROM hospital_data", conn)
+            hospital_count_df = pd.read_sql_query("SELECT COUNT(*) as count FROM real_hospital_data", conn)
             hospital_count = int(hospital_count_df.iloc[0]['count'])
 
             pattern_count_df = pd.read_sql_query("SELECT COUNT(*) as count FROM pattern_detections", conn)
@@ -66,9 +66,9 @@ class DashboardManager:
             print(f"✅ Counts - Hospital: {hospital_count}, Patterns: {pattern_count}")
 
             print("📊 Getting latest data...")
-            # Get latest data timestamp
+            # Get latest data timestamp from NYC COVID data (real current data)
             latest_data_df = pd.read_sql_query("""
-                SELECT MAX(date) as latest_date FROM hospital_data
+                SELECT MAX(date_of_interest) as latest_date FROM nyc_covid_data
             """, conn)
             latest_data = latest_data_df.iloc[0]['latest_date']
             print(f"✅ Latest data: {latest_data}")
@@ -90,7 +90,7 @@ class DashboardManager:
             covid_count = int(pd.read_sql_query("SELECT COUNT(*) as count FROM nyc_covid_data", conn).iloc[0]['count'])
 
             data_sources = {
-                'hospital_data': hospital_count > 0,
+                'real_hospital_data': hospital_count > 0,
                 'air_quality_data': air_quality_count > 0,
                 'cdc_ili_data': cdc_count > 0,
                 'nyc_covid_data': covid_count > 0
@@ -123,8 +123,8 @@ class DashboardManager:
         
         try:
             query = """
-                SELECT date, zip_code, hospital_name, er_visits_respiratory
-                FROM hospital_data 
+                SELECT date, zip_code, hospital_name, respiratory_visits as er_visits_respiratory
+                FROM real_hospital_data
                 WHERE date >= date('now', '-{} days')
                 ORDER BY date, zip_code
             """.format(days)
@@ -976,10 +976,10 @@ def map_view():
         # Get recent hospital data for map markers (use broader range since data may be older)
         hospital_query = """
             SELECT zip_code, hospital_name, COUNT(*) as visit_count,
-                   AVG(CASE WHEN er_visits_respiratory > 0 THEN
-                       (CAST(er_visits_respiratory AS FLOAT) / CAST(total_er_visits AS FLOAT)) * 100
+                   AVG(CASE WHEN respiratory_visits > 0 THEN
+                       (CAST(respiratory_visits AS FLOAT) / CAST(total_visits AS FLOAT)) * 100
                        ELSE 0 END) as respiratory_pct
-            FROM hospital_data
+            FROM real_hospital_data
             WHERE date >= date('now', '-30 days')
             GROUP BY zip_code, hospital_name
             ORDER BY visit_count DESC
@@ -990,11 +990,9 @@ def map_view():
 
         # Get tick disease data for risk overlay (all available data)
         tick_query = """
-            SELECT zip_code, COUNT(*) as tick_cases,
-                   COUNT(CASE WHEN severity = 'Severe' THEN 1 END) as severe_cases
-            FROM tick_disease_surveillance
-            GROUP BY zip_code
-            ORDER BY tick_cases DESC
+            SELECT zip_code, total_cases as tick_cases, severe_cases
+            FROM real_tick_disease_summary
+            ORDER BY total_cases DESC
         """
 
         tick_df = pd.read_sql_query(tick_query, conn)
@@ -1002,9 +1000,9 @@ def map_view():
         # Get weather data for environmental overlay (all available data)
         weather_query = """
             SELECT station_name, AVG(temp_avg_f) as avg_temp,
-                   AVG(humidity_percent) as avg_humidity,
+                   AVG(humidity_avg) as avg_humidity,
                    AVG(tick_risk_score) as avg_tick_risk
-            FROM weather_data
+            FROM real_weather_data
             GROUP BY station_name
         """
 
