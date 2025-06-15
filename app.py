@@ -57,7 +57,7 @@ class DashboardManager:
 
         try:
             print("📊 Getting counts...")
-            # Get total records count
+            # Get total records count from real hospital data
             hospital_count_df = pd.read_sql_query("SELECT COUNT(*) as count FROM real_hospital_data", conn)
             hospital_count = int(hospital_count_df.iloc[0]['count'])
 
@@ -90,7 +90,7 @@ class DashboardManager:
             covid_count = int(pd.read_sql_query("SELECT COUNT(*) as count FROM nyc_covid_data", conn).iloc[0]['count'])
 
             data_sources = {
-                'real_hospital_data': hospital_count > 0,
+                'hospital_data': hospital_count > 0,
                 'air_quality_data': air_quality_count > 0,
                 'cdc_ili_data': cdc_count > 0,
                 'nyc_covid_data': covid_count > 0
@@ -155,7 +155,15 @@ class DashboardManager:
                        current_value, rolling_mean, percentage_change,
                        confidence_score, ai_explanation, detection_timestamp
                 FROM pattern_detections
-                ORDER BY detection_timestamp DESC
+                ORDER BY
+                    CASE
+                        WHEN hospital_name LIKE '%Sinai%' OR hospital_name LIKE '%Montefiore%'
+                             OR hospital_name LIKE '%NYU%' OR hospital_name LIKE '%Presbyterian%'
+                             OR hospital_name LIKE '%Maimonides%' OR hospital_name LIKE '%Kings County%'
+                             OR hospital_name LIKE '%Elmhurst%' OR hospital_name LIKE '%Jamaica%'
+                        THEN 0 ELSE 1
+                    END,
+                    detection_timestamp DESC
                 LIMIT ?
             """
 

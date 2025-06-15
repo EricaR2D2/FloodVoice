@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 
 # Configuration
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')  # Load from environment variable
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL_NAME = "openai/gpt-3.5-turbo"
 
@@ -42,7 +42,12 @@ class PatternDetector:
 
         # Load hospital data with real-time emphasis
         data['hospital'] = pd.read_sql_query("""
-            SELECT * FROM hospital_data
+            SELECT date, hospital_name, borough, zip_code,
+                   respiratory_visits as er_visits_respiratory,
+                   total_visits as total_er_visits,
+                   0 as covid_cases,
+                   data_source
+            FROM real_hospital_data
             ORDER BY date DESC, zip_code
         """, self.conn)
         data['hospital']['date'] = pd.to_datetime(data['hospital']['date'])
@@ -101,7 +106,7 @@ class PatternDetector:
         # Load tick-borne disease surveillance data
         try:
             data['tick_diseases'] = pd.read_sql_query("""
-                SELECT * FROM tick_disease_surveillance
+                SELECT * FROM real_tick_surveillance
                 ORDER BY report_date DESC
             """, self.conn)
             data['tick_diseases']['report_date'] = pd.to_datetime(data['tick_diseases']['report_date'])
@@ -120,7 +125,10 @@ class PatternDetector:
         # Load weather data for correlation analysis
         try:
             data['weather'] = pd.read_sql_query("""
-                SELECT * FROM weather_data
+                SELECT date, station_name, borough, zip_code,
+                       temp_avg_f, temp_avg_c, humidity_avg,
+                       tick_risk_score, data_source
+                FROM real_weather_data
                 ORDER BY date DESC
             """, self.conn)
             data['weather']['date'] = pd.to_datetime(data['weather']['date'])
@@ -168,7 +176,12 @@ class PatternDetector:
 
         # Load hospital data for the specified time period
         data['hospital'] = pd.read_sql_query(f"""
-            SELECT * FROM hospital_data
+            SELECT date, hospital_name, borough, zip_code,
+                   respiratory_visits as er_visits_respiratory,
+                   total_visits as total_er_visits,
+                   0 as covid_cases,
+                   data_source
+            FROM real_hospital_data
             WHERE date >= date('now', '-{days_back} days')
             ORDER BY date, zip_code
         """, self.conn)
@@ -177,7 +190,12 @@ class PatternDetector:
         if len(data['hospital']) == 0:
             print(f"No hospital data found in last {days_back} days, loading all available data...")
             data['hospital'] = pd.read_sql_query("""
-                SELECT * FROM hospital_data
+                SELECT date, hospital_name, borough, zip_code,
+                       respiratory_visits as er_visits_respiratory,
+                       total_visits as total_er_visits,
+                       0 as covid_cases,
+                       data_source
+                FROM real_hospital_data
                 ORDER BY date, zip_code
             """, self.conn)
 

@@ -12,6 +12,10 @@
     "FLASK_ENV": {
       "description": "Flask environment",
       "value": "production"
+    },
+    "OPENROUTER_API_KEY": {
+      "description": "OpenRouter API key for AI pattern explanations (optional)",
+      "required": false
     }
   },
   "formation": {

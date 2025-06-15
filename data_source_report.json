@@ -1,0 +1,26 @@
+{
+  "generated_at": "2025-06-15T12:07:49.566671",
+  "sources": [
+    {
+      "source": "NYC COVID-19 Daily Counts",
+      "url": "https://data.cityofnewyork.us/api/views/rc75-m7u3/rows.csv?accessType=DOWNLOAD",
+      "latest_date": "2025-06-09",
+      "records": 1928,
+      "days_old": 6,
+      "status": "CURRENT"
+    },
+    {
+      "source": "NYC Emergency Department Visits",
+      "url": "https://data.cityofnewyork.us/resource/2nwg-uqyg.json",
+      "latest_date": "2022-12-03",
+      "records": "100+",
+      "days_old": 925,
+      "status": "OUTDATED"
+    },
+    {
+      "source": "NOAA Weather API",
+      "status": "AVAILABLE",
+      "note": "Current backup source"
+    }
+  ]
+}

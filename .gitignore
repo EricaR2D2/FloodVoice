@@ -26,7 +26,12 @@ venv/
 env/
 ENV/
 .venv/
+
+# Environment variables (NEVER COMMIT THESE!)
 .env
+.env.local
+.env.production
+*.env
 
 # IDE
 .vscode/
@@ -39,10 +44,10 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Database files (keeping public_health_data.db for Heroku deployment)
-# *.db
-# *.sqlite
-# *.sqlite3
+# Database files (too large for GitHub, recreated on deployment)
+*.db
+*.sqlite
+*.sqlite3
 
 # Logs
 *.log
