@@ -12,10 +12,14 @@ import os
 from phase2_pattern_detection import PatternDetector
 from forecasting_engine import ForecastingEngine
 from models import User, init_user_db
+from advanced_dashboard_routes import advanced_bp
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'public_health_mvp_secret_key_2024')
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Register blueprints
+app.register_blueprint(advanced_bp)
 
 # Initialize Flask-Login
 login_manager = LoginManager()
