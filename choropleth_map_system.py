@@ -23,14 +23,14 @@ class ChoroplethMapSystem:
         # Load NYC ZIP code boundaries
         self.zip_boundaries = self.load_zip_boundaries()
         
-        # Color schemes for different illness types
+        # Bright, colorful schemes for different illness types (light theme)
         self.illness_colors = {
-            'COVID-19': ['#FFF5F5', '#FED7D7', '#FEB2B2', '#FC8181', '#F56565', '#E53E3E', '#C53030'],
-            'Flu': ['#F0FFFF', '#C6F6D5', '#9AE6B4', '#68D391', '#48BB78', '#38A169', '#2F855A'],
-            'Foodborne': ['#EBF8FF', '#BEE3F8', '#90CDF4', '#63B3ED', '#4299E1', '#3182CE', '#2B77CB'],
-            'Air Quality': ['#F7FAFC', '#EDF2F7', '#E2E8F0', '#CBD5E0', '#A0AEC0', '#718096', '#4A5568'],
-            'Hospital ER': ['#FAF5FF', '#E9D8FD', '#D6BCFA', '#B794F6', '#9F7AEA', '#805AD5', '#6B46C1'],
-            'Tick Disease': ['#FFFBEB', '#FEF5E7', '#FED7AA', '#FDB574', '#F6AD55', '#ED8936', '#DD6B20']
+            'COVID-19': ['#FFE5E5', '#FFB3B3', '#FF8080', '#FF4D4D', '#FF1A1A', '#E60000', '#CC0000'],
+            'Flu': ['#E5F9FF', '#B3F0FF', '#80E7FF', '#4DDDFF', '#1AD4FF', '#00BFFF', '#0099CC'],
+            'Foodborne': ['#E5F3FF', '#B3E0FF', '#80CCFF', '#4DB8FF', '#1AA3FF', '#0080FF', '#0066CC'],
+            'Air Quality': ['#F0FFF0', '#D4F4D4', '#B8E8B8', '#9CDD9C', '#80D180', '#64C564', '#4CAF4C'],
+            'Hospital ER': ['#F5E5FF', '#E6B3FF', '#D680FF', '#C74DFF', '#B81AFF', '#9900E6', '#7A00B8'],
+            'Tick Disease': ['#FFF5E5', '#FFE6B3', '#FFD680', '#FFC74D', '#FFB81A', '#FFA500', '#E6940A']
         }
         
         # Risk level colors
@@ -93,18 +93,18 @@ class ChoroplethMapSystem:
         
         print(f"🗺️ Creating choropleth map for {illness_type}...")
         
-        # Create base map with dark theme
+        # Create base map with light, colorful theme
         m = folium.Map(
             location=self.map_center,
             zoom_start=self.default_zoom,
             tiles=None
         )
-        
-        # Add dark theme tile layer
+
+        # Add bright, colorful tile layer
         folium.TileLayer(
-            tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            tiles='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
             attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            name='Dark Theme',
+            name='Light Theme',
             overlay=False,
             control=True
         ).add_to(m)
@@ -329,9 +329,9 @@ class ChoroplethMapSystem:
                 
                 return {
                     'fillColor': color,
-                    'color': '#2D3748',  # Dark border
-                    'weight': 1,
-                    'fillOpacity': 0.7,
+                    'color': '#2C3E50',  # Dark blue-gray border for contrast
+                    'weight': 2,
+                    'fillOpacity': 0.8,
                     'opacity': 1.0
                 }
             
@@ -400,16 +400,16 @@ class ChoroplethMapSystem:
                 
                 # Create popup content
                 popup_html = f"""
-                <div style="width: 250px; background-color: rgba(0,0,0,0.9); color: white; padding: 10px; border-radius: 5px;">
-                    <h5 style="color: {self.illness_colors[illness_type][4]}; margin-top: 0;">
+                <div style="width: 250px; background-color: rgba(255,255,255,0.95); color: #2C3E50; padding: 15px; border-radius: 8px; border: 2px solid {self.illness_colors[illness_type][4]}; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                    <h5 style="color: {self.illness_colors[illness_type][5]}; margin-top: 0; font-weight: bold;">
                         <i class="fas fa-map-marker-alt"></i> ZIP Code {zip_code}
                     </h5>
-                    <p><strong>{illness_type} Data:</strong></p>
-                    <p style="font-size: 1.2em; color: {self.illness_colors[illness_type][5]};">
-                        <strong>{value:.1f}</strong>
+                    <p style="margin: 8px 0; font-weight: 600;"><strong>{illness_type} Data:</strong></p>
+                    <p style="font-size: 1.3em; color: {self.illness_colors[illness_type][6]}; font-weight: bold; margin: 10px 0;">
+                        {value:.1f}
                     </p>
-                    <p style="font-size: 0.9em; color: #CBD5E0;">
-                        Click for detailed analysis
+                    <p style="font-size: 0.9em; color: #7F8C8D; margin-bottom: 0;">
+                        <i class="fas fa-info-circle"></i> Click for detailed analysis
                     </p>
                 </div>
                 """
@@ -435,11 +435,11 @@ class ChoroplethMapSystem:
 
         legend_html = f'''
         <div style="position: fixed;
-                    bottom: 50px; left: 50px; width: 200px; height: auto;
-                    background-color: rgba(0, 0, 0, 0.8); border:2px solid grey; z-index:9999;
-                    font-size:14px; color: white; padding: 15px; border-radius: 5px;">
-        <h4 style="margin-top:0; color: #fff;">{illness_type}</h4>
-        <p style="margin: 5px 0; font-size: 12px;">{metric}</p>
+                    bottom: 50px; left: 50px; width: 220px; height: auto;
+                    background-color: rgba(255, 255, 255, 0.95); border:3px solid {colors[4]}; z-index:9999;
+                    font-size:14px; color: #2C3E50; padding: 18px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <h4 style="margin-top:0; color: {colors[5]}; font-weight: bold;">{illness_type}</h4>
+        <p style="margin: 8px 0; font-size: 13px; font-weight: 600; color: #34495E;">{metric}</p>
         '''
 
         # Create color gradient legend
@@ -453,15 +453,15 @@ class ChoroplethMapSystem:
                 value_range = f"{range_val:.1f}"
 
             legend_html += f'''
-            <p style="margin: 3px 0;">
-                <span style="background-color: {color}; width: 20px; height: 15px; display: inline-block; margin-right: 5px; border: 1px solid #666;"></span>
+            <p style="margin: 5px 0; font-weight: 500;">
+                <span style="background-color: {color}; width: 22px; height: 16px; display: inline-block; margin-right: 8px; border: 2px solid #2C3E50; border-radius: 3px;"></span>
                 {value_range}
             </p>
             '''
 
         legend_html += '''
-        <p style="margin: 8px 0 0 0; font-size: 11px; color: #CBD5E0;">
-            <span style="background-color: #E2E8F0; width: 20px; height: 15px; display: inline-block; margin-right: 5px; border: 1px solid #666;"></span>
+        <p style="margin: 10px 0 0 0; font-size: 12px; color: #7F8C8D; font-weight: 500;">
+            <span style="background-color: #E2E8F0; width: 22px; height: 16px; display: inline-block; margin-right: 8px; border: 2px solid #2C3E50; border-radius: 3px;"></span>
             No Data
         </p>
         </div>
@@ -483,18 +483,18 @@ class ChoroplethMapSystem:
 
         summary_html = f'''
         <div style="position: fixed;
-                    top: 10px; right: 10px; width: 250px; height: auto;
-                    background-color: rgba(0, 0, 0, 0.8); border:2px solid grey; z-index:9999;
-                    font-size:14px; color: white; padding: 15px; border-radius: 5px;">
-        <h4 style="margin-top:0; color: {self.illness_colors[illness_type][4]};">
+                    top: 10px; right: 10px; width: 280px; height: auto;
+                    background-color: rgba(255, 255, 255, 0.95); border:3px solid {self.illness_colors[illness_type][4]}; z-index:9999;
+                    font-size:14px; color: #2C3E50; padding: 18px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <h4 style="margin-top:0; color: {self.illness_colors[illness_type][5]}; font-weight: bold;">
             <i class="fas fa-chart-bar"></i> {illness_type} Summary
         </h4>
-        <p style="margin: 8px 0;"><strong>Areas with Data:</strong> {total_areas}</p>
-        <p style="margin: 8px 0;"><strong>Average {metric}:</strong> {avg_value:.1f}</p>
-        <p style="margin: 8px 0;"><strong>Highest {metric}:</strong> {max_value:.1f}</p>
-        <p style="margin: 8px 0;"><strong>Lowest {metric}:</strong> {min_value:.1f}</p>
-        <hr style="border-color: #666; margin: 10px 0;">
-        <p style="margin: 5px 0; font-size: 12px; color: #CBD5E0;">
+        <p style="margin: 10px 0; font-weight: 600;"><strong>Areas with Data:</strong> <span style="color: {self.illness_colors[illness_type][5]};">{total_areas}</span></p>
+        <p style="margin: 10px 0; font-weight: 600;"><strong>Average {metric}:</strong> <span style="color: {self.illness_colors[illness_type][5]};">{avg_value:.1f}</span></p>
+        <p style="margin: 10px 0; font-weight: 600;"><strong>Highest {metric}:</strong> <span style="color: {self.illness_colors[illness_type][6]};">{max_value:.1f}</span></p>
+        <p style="margin: 10px 0; font-weight: 600;"><strong>Lowest {metric}:</strong> <span style="color: {self.illness_colors[illness_type][3]};">{min_value:.1f}</span></p>
+        <hr style="border-color: {self.illness_colors[illness_type][4]}; margin: 12px 0; border-width: 2px;">
+        <p style="margin: 8px 0; font-size: 13px; color: #7F8C8D; font-weight: 500;">
             <i class="fas fa-info-circle"></i> Hover over areas for details
         </p>
         </div>
