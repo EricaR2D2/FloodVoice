@@ -5,6 +5,7 @@ API endpoints for the advanced filtering and visualization system
 """
 
 from flask import Blueprint, render_template, request, jsonify, Response
+from flask_login import login_required, current_user
 import pandas as pd
 import sqlite3
 from datetime import datetime, timedelta
@@ -21,6 +22,7 @@ map_system = AdvancedMapSystem()
 choropleth_system = ChoroplethMapSystem()
 
 @advanced_bp.route('/advanced-dashboard')
+@login_required
 def advanced_dashboard():
     """Render the advanced dashboard page"""
     
@@ -59,6 +61,7 @@ def advanced_dashboard():
                              last_updated="Unknown")
 
 @advanced_bp.route('/api/map-data', methods=['POST'])
+@login_required
 def get_map_data():
     """Get filtered map data for all illness types"""
     
@@ -111,6 +114,7 @@ def get_map_data():
         return jsonify({'success': False, 'error': str(e)})
 
 @advanced_bp.route('/api/map-layer/<illness_type>', methods=['POST'])
+@login_required
 def get_map_layer(illness_type):
     """Get specific illness type layer data"""
     
@@ -147,6 +151,7 @@ def get_map_layer(illness_type):
         return jsonify({'success': False, 'error': str(e)})
 
 @advanced_bp.route('/api/chart-data', methods=['POST'])
+@login_required
 def get_chart_data():
     """Get chart data for filtered results"""
     
@@ -174,6 +179,7 @@ def get_chart_data():
         return jsonify({'success': False, 'error': str(e)})
 
 @advanced_bp.route('/api/table-data', methods=['POST'])
+@login_required
 def get_table_data():
     """Get table data for filtered results"""
     
@@ -191,6 +197,7 @@ def get_table_data():
         return jsonify({'success': False, 'error': str(e)})
 
 @advanced_bp.route('/api/export/map-data')
+@login_required
 def export_map_data():
     """Export map data as JSON"""
     
@@ -226,6 +233,7 @@ def export_map_data():
         return jsonify({'error': str(e)}), 500
 
 @advanced_bp.route('/choropleth-map/<illness_type>')
+@login_required
 def choropleth_map(illness_type):
     """Generate and serve choropleth map for specific illness type"""
 
@@ -261,6 +269,7 @@ def choropleth_map(illness_type):
         return jsonify({'error': str(e)}), 500
 
 @advanced_bp.route('/multi-choropleth-map')
+@login_required
 def multi_choropleth_map():
     """Generate and serve multi-illness choropleth map"""
 
@@ -294,6 +303,7 @@ def multi_choropleth_map():
         return jsonify({'error': str(e)}), 500
 
 @advanced_bp.route('/api/choropleth-data/<illness_type>')
+@login_required
 def get_choropleth_data(illness_type):
     """Get choropleth data for specific illness type"""
 
@@ -322,6 +332,7 @@ def get_choropleth_data(illness_type):
         return jsonify({'success': False, 'error': str(e)})
 
 @advanced_bp.route('/api/export/table-data')
+@login_required
 def export_table_data():
     """Export table data as CSV"""
     

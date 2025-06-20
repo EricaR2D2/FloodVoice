@@ -565,6 +565,11 @@
 
         // Initialize map
         function initializeMap() {
+            // Check if map is already initialized
+            if (healthMap) {
+                return healthMap;
+            }
+
             healthMap = L.map('healthMap').setView([40.7831, -73.9712], 11);
 
             // Add bright, colorful tile layer
@@ -817,9 +822,6 @@
         function loadInitialData() {
             showLoading();
 
-            // Always initialize the base map first
-            initializeMap();
-
             // Check if only one illness type is selected for choropleth view
             if (currentFilters.illnessTypes.length === 1) {
                 loadChoroplethView(currentFilters.illnessTypes[0]);
@@ -867,8 +869,7 @@
                     if (healthMap) {
                         loadPointMapData();
                     } else {
-                        initializeMap();
-                        loadPointMapData();
+                        console.error('Map not initialized for fallback');
                     }
                 })
                 .finally(() => {
@@ -880,7 +881,8 @@
         function loadPointMapData() {
             // Ensure we have a map to work with
             if (!healthMap) {
-                initializeMap();
+                console.error('Map not initialized. Call initializeMap() first.');
+                return;
             }
 
             fetch('/api/map-data', {
