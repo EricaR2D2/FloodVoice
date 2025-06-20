@@ -16,9 +16,12 @@ scipy>=1.10.0
 flask>=3.1.0
 flask-socketio>=5.5.0
 flask-login>=0.6.0
+werkzeug>=2.0.0
 
-# Interactive mapping
+# Interactive mapping and geospatial
 folium>=0.14.0
+geopandas>=0.12.0
+branca>=0.6.0
 
 # AI/ML integration
 # OpenRouter API (no additional package needed, uses requests)

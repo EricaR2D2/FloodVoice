@@ -75,12 +75,18 @@
             border: 1px solid rgba(255,255,255,0.2);
             color: var(--text-light);
         }
-        
+
         .form-control:focus, .form-select:focus {
             background-color: rgba(255,255,255,0.15);
             border-color: var(--accent-color);
             color: var(--text-light);
             box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        /* Fix dropdown option visibility */
+        .form-select option {
+            background-color: #ffffff;
+            color: #000000;
         }
         
         .form-check-input:checked {
@@ -250,6 +256,7 @@
         <!-- Illness Type Filters -->
         <div class="filter-section">
             <h5><i class="fas fa-virus"></i> Illness Types</h5>
+            <p class="text-muted small mb-3">💡 Select only one illness type to see color-coded ZIP code map</p>
             <div id="illnessFilters">
                 <div class="illness-toggle">
                     <div class="d-flex align-items-center">
@@ -263,35 +270,35 @@
                         <div class="illness-color" style="background-color: #4ECDC4;"></div>
                         <span>Flu Surveillance</span>
                     </div>
-                    <input type="checkbox" class="form-check-input illness-checkbox" data-illness="Flu" checked>
+                    <input type="checkbox" class="form-check-input illness-checkbox" data-illness="Flu">
                 </div>
                 <div class="illness-toggle">
                     <div class="d-flex align-items-center">
                         <div class="illness-color" style="background-color: #45B7D1;"></div>
                         <span>Foodborne Illness</span>
                     </div>
-                    <input type="checkbox" class="form-check-input illness-checkbox" data-illness="Foodborne" checked>
+                    <input type="checkbox" class="form-check-input illness-checkbox" data-illness="Foodborne">
                 </div>
                 <div class="illness-toggle">
                     <div class="d-flex align-items-center">
                         <div class="illness-color" style="background-color: #96CEB4;"></div>
                         <span>Air Quality</span>
                     </div>
-                    <input type="checkbox" class="form-check-input illness-checkbox" data-illness="Air Quality" checked>
+                    <input type="checkbox" class="form-check-input illness-checkbox" data-illness="Air Quality">
                 </div>
                 <div class="illness-toggle">
                     <div class="d-flex align-items-center">
                         <div class="illness-color" style="background-color: #DDA0DD;"></div>
                         <span>Hospital ER</span>
                     </div>
-                    <input type="checkbox" class="form-check-input illness-checkbox" data-illness="Hospital ER" checked>
+                    <input type="checkbox" class="form-check-input illness-checkbox" data-illness="Hospital ER">
                 </div>
                 <div class="illness-toggle">
                     <div class="d-flex align-items-center">
                         <div class="illness-color" style="background-color: #FFEAA7;"></div>
                         <span>Tick Disease</span>
                     </div>
-                    <input type="checkbox" class="form-check-input illness-checkbox" data-illness="Tick Disease" checked>
+                    <input type="checkbox" class="form-check-input illness-checkbox" data-illness="Tick Disease">
                 </div>
             </div>
         </div>
@@ -382,7 +389,7 @@
         <!-- Filter Summary -->
         <div class="filter-summary" id="filterSummary">
             <strong>Active Filters:</strong><br>
-            <span id="activeSummary">All data types, Last 30 days, All boroughs</span>
+            <span id="activeSummary">COVID-19, Last 30 days, All boroughs</span>
         </div>
     </div>
 
@@ -539,7 +546,7 @@
         // Global variables
         let healthMap;
         let currentFilters = {
-            illnessTypes: ['COVID-19', 'Flu', 'Foodborne', 'Air Quality', 'Hospital ER', 'Tick Disease'],
+            illnessTypes: ['COVID-19'], // Start with only COVID-19 to show choropleth view
             dateRange: '30',
             borough: '',
             zipCode: '',
@@ -758,17 +765,26 @@
         function applyFilters() {
             showLoading();
 
-            // Update map layers
-            updateMapLayers();
+            // Check if we should show choropleth or point view
+            if (currentFilters.illnessTypes.length === 1) {
+                loadChoroplethView(currentFilters.illnessTypes[0]);
+                // Update button text
+                const button = document.getElementById('toggleChoropleth');
+                if (button) {
+                    button.innerHTML = '<i class="fas fa-circle"></i> Point View';
+                }
+            } else {
+                // Update point-based map for multiple illness types
+                updateMapLayers();
+                // Reset button text
+                const button = document.getElementById('toggleChoropleth');
+                if (button) {
+                    button.innerHTML = '<i class="fas fa-map"></i> ZIP Boundaries';
+                }
+            }
 
-            // Update charts
-            updateCharts();
-
-            // Update data table
-            updateDataTable();
-
-            // Update stats
-            updateStats();
+            // Update other components
+            loadDashboardStats();
 
             hideLoading();
         }
@@ -801,7 +817,72 @@
         function loadInitialData() {
             showLoading();
 
-            // Load map data
+            // Always initialize the base map first
+            initializeMap();
+
+            // Check if only one illness type is selected for choropleth view
+            if (currentFilters.illnessTypes.length === 1) {
+                loadChoroplethView(currentFilters.illnessTypes[0]);
+            } else {
+                // Load point-based map for multiple illness types
+                loadPointMapData();
+            }
+
+            // Load other dashboard data
+            loadDashboardStats();
+        }
+
+        // Load choropleth view for single illness type
+        function loadChoroplethView(illnessType) {
+            // Clear existing layers first
+            if (healthMap) {
+                Object.values(mapLayers).forEach(layer => {
+                    healthMap.removeLayer(layer);
+                });
+                mapLayers = {};
+            }
+
+            const params = new URLSearchParams({
+                date_range: currentFilters.dateRange,
+                borough: currentFilters.borough,
+                zip_code: currentFilters.zipCode
+            });
+
+            fetch(`/choropleth-map/${illnessType}?${params}`)
+                .then(response => response.text())
+                .then(html => {
+                    // Replace the map container with choropleth
+                    const mapContainer = document.getElementById('healthMap');
+                    mapContainer.innerHTML = html;
+
+                    // Update button to show current view
+                    const button = document.getElementById('toggleChoropleth');
+                    if (button) {
+                        button.innerHTML = '<i class="fas fa-circle"></i> Point View';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading choropleth:', error);
+                    // Fallback to point map
+                    if (healthMap) {
+                        loadPointMapData();
+                    } else {
+                        initializeMap();
+                        loadPointMapData();
+                    }
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+
+        // Load point-based map data
+        function loadPointMapData() {
+            // Ensure we have a map to work with
+            if (!healthMap) {
+                initializeMap();
+            }
+
             fetch('/api/map-data', {
                 method: 'POST',
                 headers: {
@@ -812,7 +893,37 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    loadMapData(data.map_data);
+                    // Clear existing layers
+                    Object.values(mapLayers).forEach(layer => {
+                        healthMap.removeLayer(layer);
+                    });
+                    mapLayers = {};
+
+                    // Load new layers
+                    updateMapLayers();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading map data:', error);
+                showError('Failed to load map data');
+            })
+            .finally(() => {
+                hideLoading();
+            });
+        }
+
+        // Load dashboard statistics and other data
+        function loadDashboardStats() {
+            fetch('/api/map-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentFilters)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
                     updateStats(data.stats);
                     updateCharts(data.chart_data);
                     updateDataTable(data.table_data);
@@ -820,11 +931,7 @@
                 }
             })
             .catch(error => {
-                console.error('Error loading initial data:', error);
-                showError('Failed to load initial data');
-            })
-            .finally(() => {
-                hideLoading();
+                console.error('Error loading dashboard data:', error);
             });
         }
 
@@ -1048,7 +1155,8 @@
                     const illness = selectedIllnesses[0];
                     const params = new URLSearchParams({
                         date_range: currentFilters.dateRange,
-                        borough: currentFilters.borough
+                        borough: currentFilters.borough,
+                        zip_code: currentFilters.zipCode
                     });
 
                     fetch(`/choropleth-map/${illness}?${params}`)

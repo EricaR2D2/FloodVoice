@@ -43,20 +43,30 @@ class ChoroplethMapSystem:
     
     def load_zip_boundaries(self):
         """Load NYC ZIP code boundaries from GeoJSON file"""
-        
+
         try:
-            geojson_path = os.path.join('static', 'ny_zip_codes.geojson')
-            
+            # Try the correct filename first
+            geojson_path = os.path.join('static', 'nyc_zipcodes.geojson')
+
             if os.path.exists(geojson_path):
                 with open(geojson_path, 'r') as f:
                     zip_data = json.load(f)
-                
+
                 print(f"✅ Loaded ZIP code boundaries: {len(zip_data['features'])} ZIP codes")
                 return zip_data
             else:
-                print(f"❌ ZIP code boundaries file not found: {geojson_path}")
-                return None
-                
+                # Fallback to alternative filename
+                geojson_path = os.path.join('static', 'ny_zip_codes.geojson')
+                if os.path.exists(geojson_path):
+                    with open(geojson_path, 'r') as f:
+                        zip_data = json.load(f)
+
+                    print(f"✅ Loaded ZIP code boundaries: {len(zip_data['features'])} ZIP codes")
+                    return zip_data
+                else:
+                    print(f"❌ ZIP code boundaries file not found: {geojson_path}")
+                    return None
+
         except Exception as e:
             print(f"❌ Error loading ZIP code boundaries: {e}")
             return None
@@ -129,7 +139,7 @@ class ChoroplethMapSystem:
         print(f"✅ Choropleth map created for {illness_type}")
         return m
     
-    def get_illness_data_by_zip(self, illness_type, date_range=None, borough_filter=None):
+    def get_illness_data_by_zip(self, illness_type, date_range=None, borough_filter=None, zip_code_filter=None):
         """Get illness data aggregated by ZIP code"""
         
         try:
