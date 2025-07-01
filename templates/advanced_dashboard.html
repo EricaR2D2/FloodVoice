@@ -465,6 +465,12 @@
                         <div class="map-container" id="healthMap">
                             <!-- Map will be loaded here -->
                         </div>
+                        <!-- No data message (hidden by default) -->
+                        <div id="map-no-data-message" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(255, 255, 255, 0.95); border: 2px solid #FFC107; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000;">
+                            <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2em; margin-bottom: 10px;"></i>
+                            <h5 class="text-dark">No Data Available</h5>
+                            <p class="text-muted mb-0">No data found for the selected filters.<br>Try adjusting your filter criteria.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -554,6 +560,14 @@
         };
         let mapLayers = {};
         let chartInstances = {};
+
+        // Helper function to show/hide no data message
+        function toggleNoDataMessage(show) {
+            const noDataMessage = document.getElementById('map-no-data-message');
+            if (noDataMessage) {
+                noDataMessage.style.display = show ? 'block' : 'none';
+            }
+        }
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
@@ -857,6 +871,14 @@
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
+
+                    // Check for data availability header
+                    const dataFound = response.headers.get('X-Data-Found');
+                    console.log(`Data found for ${illnessType}: ${dataFound}`);
+
+                    // Handle no data message visibility
+                    toggleNoDataMessage(dataFound === 'false');
+
                     return response.text();
                 })
                 .then(html => {
@@ -963,6 +985,9 @@
 
         // Update map layers based on filters
         function updateMapLayers() {
+            // Hide no data message when showing point-based map
+            toggleNoDataMessage(false);
+
             // Clear existing layers
             Object.values(mapLayers).forEach(layer => {
                 healthMap.removeLayer(layer);
@@ -1186,7 +1211,16 @@
                     });
 
                     fetch(`/choropleth-map/${illness}?${params}`)
-                        .then(response => response.text())
+                        .then(response => {
+                            // Check for data availability header
+                            const dataFound = response.headers.get('X-Data-Found');
+                            console.log(`Toggle choropleth - Data found for ${illness}: ${dataFound}`);
+
+                            // Handle no data message visibility
+                            toggleNoDataMessage(dataFound === 'false');
+
+                            return response.text();
+                        })
                         .then(html => {
                             mapContainer.innerHTML = html;
                             button.innerHTML = '<i class="fas fa-circle"></i> Point View';
@@ -1220,6 +1254,7 @@
                 }
             } else {
                 // Switch back to point view
+                toggleNoDataMessage(false); // Hide no data message when switching to point view
                 location.reload(); // Simple way to reset to original map
             }
         }

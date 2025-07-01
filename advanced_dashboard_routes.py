@@ -4,7 +4,7 @@ Advanced Dashboard Routes for Public Health MVP
 API endpoints for the advanced filtering and visualization system
 """
 
-from flask import Blueprint, render_template, request, jsonify, Response
+from flask import Blueprint, render_template, request, jsonify, Response, make_response
 from flask_login import login_required, current_user
 import pandas as pd
 import sqlite3
@@ -238,13 +238,28 @@ def choropleth_map(illness_type):
     """Generate and serve choropleth map for specific illness type"""
 
     try:
+        print(f"Creating choropleth map for {illness_type}")
+
         # Get filter parameters from query string
         date_range = request.args.get('date_range', '30')
         borough = request.args.get('borough', '')
         zip_code = request.args.get('zip_code', '')
 
+        print(f"Filters: date_range={date_range}, borough={borough}, zip_code={zip_code}")
+
         # Convert date range
         date_filter = get_date_range_filter(date_range)
+        print(f"Date filter: {date_filter}")
+
+        # Check if data exists before creating map
+        illness_data = choropleth_system.get_illness_data_by_zip(
+            illness_type=illness_type,
+            date_range=date_filter,
+            borough_filter=borough if borough else None
+        )
+
+        data_found = not illness_data.empty
+        print(f"Data found for {illness_type}: {data_found} ({len(illness_data)} records)")
 
         # Create choropleth map (ZIP code filtering handled in data queries)
         choropleth_map = choropleth_system.create_choropleth_map(
@@ -254,19 +269,28 @@ def choropleth_map(illness_type):
         )
 
         if choropleth_map:
+            print(f"✅ Choropleth map created successfully for {illness_type}")
+
             # Save map to temporary file
             map_filename = f'temp_choropleth_{illness_type}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.html'
             map_path = os.path.join('static', map_filename)
             choropleth_map.save(map_path)
 
-            # Return map HTML
-            return choropleth_map._repr_html_()
+            # Create response with custom header indicating data status
+            response = make_response(choropleth_map._repr_html_())
+            response.headers['X-Data-Found'] = 'true' if data_found else 'false'
+            response.headers['Content-Type'] = 'text/html'
+
+            return response
         else:
-            return jsonify({'error': 'Failed to create choropleth map'}), 500
+            print(f"❌ Failed to create choropleth map for {illness_type}")
+            return jsonify({'error': 'Failed to create choropleth map - no data available'}), 500
 
     except Exception as e:
-        print(f"Error creating choropleth map: {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Error creating choropleth map for {illness_type}: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Choropleth error: {str(e)}'}), 500
 
 @advanced_bp.route('/multi-choropleth-map')
 @login_required
@@ -622,7 +646,7 @@ def get_covid_layer_data(conn, filters):
         return []
 
 def get_flu_layer_data(conn, filters):
-    """Get flu layer data points"""
+    """Get flu layer data points with coordinates"""
     try:
         # Extract filter parameters
         date_range = filters.get('dateRange', '30')
@@ -651,7 +675,68 @@ def get_flu_layer_data(conn, filters):
         query += " GROUP BY zip_code, borough"
 
         df = pd.read_sql_query(query, conn)
-        return df.to_dict('records') if not df.empty else []
+
+        if df.empty:
+            return []
+
+        # Add coordinates and format for map display
+        layer_data = []
+
+        # ZIP code coordinates mapping
+        zip_coords = {
+            '10001': [40.7505, -73.9934],  # Manhattan
+            '10451': [40.8176, -73.9482],  # Bronx
+            '11101': [40.7505, -73.9365],  # Queens
+            '11201': [40.6892, -73.9442],  # Brooklyn
+            '10301': [40.6323, -74.0754],  # Staten Island
+            # Add more as needed
+        }
+
+        # Borough center coordinates as fallback
+        borough_coords = {
+            'Bronx': [40.8448, -73.8648],
+            'Brooklyn': [40.6782, -73.9442],
+            'Manhattan': [40.7831, -73.9712],
+            'Queens': [40.7282, -73.7949],
+            'Staten Island': [40.5795, -74.1502]
+        }
+
+        for _, row in df.iterrows():
+            zip_code_str = str(row['zip_code'])
+            borough_name = row['borough']
+
+            # Get coordinates (prefer ZIP code, fallback to borough)
+            coords = zip_coords.get(zip_code_str, borough_coords.get(borough_name, [40.7831, -73.9712]))
+
+            # Calculate marker size based on flu rate
+            flu_rate = row['avg_flu_rate'] if pd.notna(row['avg_flu_rate']) else 0
+            marker_size = max(8, min(20, flu_rate * 2))  # Scale between 8-20
+
+            # Color based on flu rate
+            if flu_rate > 15:
+                color = '#E74C3C'  # Red for high
+            elif flu_rate > 10:
+                color = '#F39C12'  # Orange for medium
+            else:
+                color = '#3498DB'  # Blue for low
+
+            layer_data.append({
+                'lat': coords[0],
+                'lng': coords[1],
+                'size': marker_size,
+                'color': color,
+                'borderColor': '#2C3E50',
+                'popup': f'''
+                    <div style="width: 200px">
+                        <h5 style="color: #3498DB">Flu Surveillance - {borough_name}</h5>
+                        <p><strong>ZIP Code:</strong> {zip_code_str}</p>
+                        <p><strong>Flu Rate:</strong> {flu_rate:.1f}%</p>
+                        <p><strong>Total Visits:</strong> {row['total_flu_visits']:,.0f}</p>
+                    </div>
+                '''
+            })
+
+        return layer_data
 
     except Exception as e:
         print(f"Error getting flu layer data: {e}")
