@@ -378,7 +378,7 @@
 
         <!-- Apply Filters Button -->
         <div class="d-grid gap-2 mb-3">
-            <button class="btn btn-primary" id="applyFilters">
+            <button type="button" class="btn btn-primary" id="applyFilters" onclick="applyFilters(event)">
                 <i class="fas fa-filter"></i> Apply Filters
             </button>
             <button class="btn btn-outline-secondary" id="resetFilters">
@@ -767,7 +767,9 @@
         }
 
         // Apply filters and refresh data
-        function applyFilters() {
+        function applyFilters(event) {
+            event.preventDefault();
+            console.log("Filters applied via JavaScript.");
             showLoading();
 
             // Check if we should show choropleth or point view
@@ -851,25 +853,47 @@
             });
 
             fetch(`/choropleth-map/${illnessType}?${params}`)
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
                 .then(html => {
-                    // Replace the map container with choropleth
-                    const mapContainer = document.getElementById('healthMap');
-                    mapContainer.innerHTML = html;
+                    // Check if we got valid HTML content
+                    if (html && html.trim().length > 0 && !html.includes('Error')) {
+                        // Replace the map container with choropleth
+                        const mapContainer = document.getElementById('healthMap');
+                        mapContainer.innerHTML = html;
 
-                    // Update button to show current view
-                    const button = document.getElementById('toggleChoropleth');
-                    if (button) {
-                        button.innerHTML = '<i class="fas fa-circle"></i> Point View';
+                        // Update button to show current view
+                        const button = document.getElementById('toggleChoropleth');
+                        if (button) {
+                            button.innerHTML = '<i class="fas fa-circle"></i> Point View';
+                        }
+                    } else {
+                        throw new Error('Invalid choropleth response');
                     }
                 })
                 .catch(error => {
                     console.error('Error loading choropleth:', error);
-                    // Fallback to point map
+                    console.log('Falling back to point-based map...');
+
+                    // Fallback to point map with single illness type
                     if (healthMap) {
-                        loadPointMapData();
+                        // Re-initialize map if needed
+                        initializeMap();
+                        // Load single illness as point markers
+                        addMapLayer(illnessType);
+
+                        // Update button to show fallback state
+                        const button = document.getElementById('toggleChoropleth');
+                        if (button) {
+                            button.innerHTML = '<i class="fas fa-map"></i> ZIP Boundaries (Fallback: Points)';
+                        }
                     } else {
                         console.error('Map not initialized for fallback');
+                        showError('Failed to load map data');
                     }
                 })
                 .finally(() => {

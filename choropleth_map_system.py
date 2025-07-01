@@ -71,23 +71,28 @@ class ChoroplethMapSystem:
             print(f"❌ Error loading ZIP code boundaries: {e}")
             return None
     
+    def extract_zip_code(self, feature):
+        """Extract ZIP code from feature properties, handling both ZCTA5CE10 and MODZCTA"""
+        props = feature['properties']
+        return props.get('ZCTA5CE10') or props.get('MODZCTA') or ''
+
     def filter_nyc_zip_codes(self, zip_boundaries):
         """Filter to only NYC ZIP codes (10000-11999 range)"""
-        
+
         if not zip_boundaries:
             return None
-        
+
         nyc_features = []
-        
+
         for feature in zip_boundaries['features']:
-            zip_code = feature['properties'].get('ZCTA5CE10', '')
-            
+            zip_code = self.extract_zip_code(feature)
+
             # NYC ZIP codes are generally in the 10000-11999 range
             if zip_code and zip_code.isdigit():
                 zip_int = int(zip_code)
                 if 10000 <= zip_int <= 11999:
                     nyc_features.append(feature)
-        
+
         if nyc_features:
             filtered_data = {
                 'type': 'FeatureCollection',
@@ -95,14 +100,14 @@ class ChoroplethMapSystem:
             }
             print(f"✅ Filtered to {len(nyc_features)} NYC ZIP codes")
             return filtered_data
-        
+
         return None
     
     def create_choropleth_map(self, illness_type, date_range=None, borough_filter=None):
         """Create a choropleth map showing illness data by ZIP code boundaries"""
-        
+
         print(f"🗺️ Creating choropleth map for {illness_type}...")
-        
+
         # Create base map with light, colorful theme
         m = folium.Map(
             location=self.map_center,
@@ -118,24 +123,65 @@ class ChoroplethMapSystem:
             overlay=False,
             control=True
         ).add_to(m)
-        
+
         # Get illness data by ZIP code
         illness_data = self.get_illness_data_by_zip(illness_type, date_range, borough_filter)
-        
-        if not illness_data.empty and self.zip_boundaries:
+
+        # Check if data is empty - if so, return base map with boundaries only
+        if illness_data.empty:
+            print(f"⚠️ No data available for {illness_type}, showing base map with boundaries only")
+            if self.zip_boundaries:
+                nyc_boundaries = self.filter_nyc_zip_codes(self.zip_boundaries)
+                if nyc_boundaries:
+                    # Add just the boundaries without choropleth coloring
+                    folium.GeoJson(
+                        nyc_boundaries,
+                        style_function=lambda feature: {
+                            'fillColor': '#E2E8F0',  # Light gray
+                            'color': '#2C3E50',
+                            'weight': 2,
+                            'fillOpacity': 0.3,
+                            'opacity': 1.0
+                        },
+                        popup=folium.GeoJsonPopup(
+                            fields=['MODZCTA'],
+                            aliases=['ZIP Code:'],
+                            localize=True,
+                            labels=True,
+                            style="background-color: rgba(0,0,0,0.8); color: white;",
+                        ),
+                        tooltip=folium.GeoJsonTooltip(
+                            fields=['MODZCTA'],
+                            aliases=['ZIP Code:'],
+                            localize=True,
+                            sticky=True,
+                            labels=True,
+                            style="""
+                                background-color: rgba(0,0,0,0.8);
+                                border: 2px solid white;
+                                border-radius: 3px;
+                                color: white;
+                            """,
+                            max_width=200,
+                        )
+                    ).add_to(m)
+            print(f"✅ Base choropleth map created for {illness_type} (no data)")
+            return m
+
+        if self.zip_boundaries:
             # Filter to NYC ZIP codes only
             nyc_boundaries = self.filter_nyc_zip_codes(self.zip_boundaries)
-            
+
             if nyc_boundaries:
                 # Create choropleth layer
                 self.add_choropleth_layer(m, nyc_boundaries, illness_data, illness_type)
-                
+
                 # Add legend
                 self.add_choropleth_legend(m, illness_type, illness_data)
-                
+
                 # Add data summary
                 self.add_data_summary(m, illness_data, illness_type)
-        
+
         print(f"✅ Choropleth map created for {illness_type}")
         return m
     
@@ -333,10 +379,9 @@ class ChoroplethMapSystem:
                 return colors[color_index]
             
             def style_function(feature):
-                zip_code = feature['properties'].get('ZCTA5CE10', '')
+                zip_code = self.extract_zip_code(feature)
                 color = get_color(zip_code)
-                value = data_dict.get(str(zip_code), 0)
-                
+
                 return {
                     'fillColor': color,
                     'color': '#2C3E50',  # Dark blue-gray border for contrast
@@ -360,14 +405,14 @@ class ChoroplethMapSystem:
                 style_function=style_function,
                 highlight_function=highlight_function,
                 popup=folium.GeoJsonPopup(
-                    fields=['ZCTA5CE10'],
+                    fields=['MODZCTA'],
                     aliases=['ZIP Code:'],
                     localize=True,
                     labels=True,
                     style="background-color: rgba(0,0,0,0.8); color: white;",
                 ),
                 tooltip=folium.GeoJsonTooltip(
-                    fields=['ZCTA5CE10'],
+                    fields=['MODZCTA'],
                     aliases=['ZIP Code:'],
                     localize=True,
                     sticky=True,
@@ -391,7 +436,7 @@ class ChoroplethMapSystem:
         """Add custom popups with detailed health information"""
         
         for feature in boundaries['features']:
-            zip_code = feature['properties'].get('ZCTA5CE10', '')
+            zip_code = self.extract_zip_code(feature)
             value = data_dict.get(str(zip_code), 0)
             
             if value > 0:
@@ -582,7 +627,7 @@ class ChoroplethMapSystem:
                 return colors[color_index]
 
             def style_function(feature):
-                zip_code = feature['properties'].get('ZCTA5CE10', '')
+                zip_code = self.extract_zip_code(feature)
                 color = get_color(zip_code)
 
                 return {
@@ -598,14 +643,14 @@ class ChoroplethMapSystem:
                 boundaries,
                 style_function=style_function,
                 popup=folium.GeoJsonPopup(
-                    fields=['ZCTA5CE10'],
+                    fields=['MODZCTA'],
                     aliases=[f'ZIP Code ({illness_type}):'],
                     localize=True,
                     labels=True,
                     style="background-color: rgba(0,0,0,0.8); color: white;",
                 ),
                 tooltip=folium.GeoJsonTooltip(
-                    fields=['ZCTA5CE10'],
+                    fields=['MODZCTA'],
                     aliases=[f'{illness_type} - ZIP:'],
                     localize=True,
                     sticky=True,
