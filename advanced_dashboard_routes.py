@@ -238,35 +238,91 @@ def choropleth_map(illness_type):
     """Generate and serve choropleth map for specific illness type"""
 
     try:
-        print(f"Creating choropleth map for {illness_type}")
+        print(f"🗺️ Creating choropleth map for {illness_type}")
+
+        # 1. RECEIVED FILTER PARAMETERS - Log exact request.args
+        print(f"📥 RECEIVED FILTER PARAMETERS:")
+        print(f"   request.args: {dict(request.args)}")
 
         # Get filter parameters from query string
         date_range = request.args.get('date_range', '30')
         borough = request.args.get('borough', '')
         zip_code = request.args.get('zip_code', '')
 
-        print(f"Filters: date_range={date_range}, borough={borough}, zip_code={zip_code}")
+        print(f"   Parsed filters: date_range={date_range}, borough={borough}, zip_code={zip_code}")
 
         # Convert date range
         date_filter = get_date_range_filter(date_range)
-        print(f"Date filter: {date_filter}")
+        print(f"   Converted date_filter: {date_filter}")
 
-        # Check if data exists before creating map
+        # 2. HEALTH DATA DATAFRAME - Check data fetching
+        print(f"📊 FETCHING HEALTH DATA:")
         illness_data = choropleth_system.get_illness_data_by_zip(
             illness_type=illness_type,
             date_range=date_filter,
             borough_filter=borough if borough else None
         )
 
+        print(f"   DataFrame type: {type(illness_data)}")
+        print(f"   DataFrame length: {len(illness_data)}")
+        print(f"   DataFrame empty: {illness_data.empty}")
+
+        if not illness_data.empty:
+            print(f"   DataFrame columns: {list(illness_data.columns)}")
+            print(f"   DataFrame head():")
+            print(illness_data.head())
+        else:
+            print(f"   ⚠️ DataFrame is EMPTY - no data found!")
+
         data_found = not illness_data.empty
-        print(f"Data found for {illness_type}: {data_found} ({len(illness_data)} records)")
+        print(f"   Data found for {illness_type}: {data_found} ({len(illness_data)} records)")
+
+        # 3. GEOJSON STATE - Check GeoJSON before map creation
+        print(f"🗺️ CHECKING GEOJSON STATE:")
+
+        # Access the zip_boundaries from choropleth_system
+        zip_boundaries = choropleth_system.zip_boundaries
+        print(f"   zip_boundaries type: {type(zip_boundaries)}")
+
+        if zip_boundaries:
+            print(f"   zip_boundaries length: {len(zip_boundaries.get('features', []))}")
+
+            # Check filtered GeoJSON (NYC filtering)
+            filtered_geojson = choropleth_system.filter_nyc_zip_codes(borough=borough if borough else None, zip_code=zip_code if zip_code else None)
+            print(f"   filtered_geojson type: {type(filtered_geojson)}")
+
+            if filtered_geojson:
+                print(f"   filtered_geojson length: {len(filtered_geojson.get('features', []))}")
+            else:
+                print(f"   ⚠️ filtered_geojson is None!")
+        else:
+            print(f"   ⚠️ zip_boundaries is None!")
 
         # Create choropleth map (ZIP code filtering handled in data queries)
+        print(f"🎨 CREATING CHOROPLETH MAP:")
         choropleth_map = choropleth_system.create_choropleth_map(
             illness_type=illness_type,
             date_range=date_filter,
             borough_filter=borough if borough else None
         )
+
+        # 4. FINAL CHECK - Verify DataFrame before Folium.Choropleth call
+        print(f"✅ FINAL DATA CHECK BEFORE FOLIUM:")
+        if not illness_data.empty:
+            print(f"   Final DataFrame columns: {list(illness_data.columns)}")
+            print(f"   Final DataFrame shape: {illness_data.shape}")
+            print(f"   Final DataFrame head():")
+            print(illness_data.head())
+
+            # Check for required columns
+            required_cols = ['area', 'value']
+            missing_cols = [col for col in required_cols if col not in illness_data.columns]
+            if missing_cols:
+                print(f"   ⚠️ MISSING REQUIRED COLUMNS: {missing_cols}")
+            else:
+                print(f"   ✅ All required columns present: {required_cols}")
+        else:
+            print(f"   ⚠️ DataFrame is still EMPTY before map creation!")
 
         if choropleth_map:
             print(f"✅ Choropleth map created successfully for {illness_type}")
@@ -281,14 +337,20 @@ def choropleth_map(illness_type):
             response.headers['X-Data-Found'] = 'true' if data_found else 'false'
             response.headers['Content-Type'] = 'text/html'
 
+            print(f"🎯 RESPONSE CREATED:")
+            print(f"   Map HTML length: {len(choropleth_map._repr_html_())}")
+            print(f"   X-Data-Found header: {response.headers.get('X-Data-Found')}")
+
             return response
         else:
             print(f"❌ Failed to create choropleth map for {illness_type}")
+            print(f"   choropleth_map is None - map creation failed!")
             return jsonify({'error': 'Failed to create choropleth map - no data available'}), 500
 
     except Exception as e:
-        print(f"❌ Error creating choropleth map for {illness_type}: {e}")
+        print(f"❌ ERROR creating choropleth map for {illness_type}: {e}")
         import traceback
+        print(f"📋 FULL TRACEBACK:")
         traceback.print_exc()
         return jsonify({'error': f'Choropleth error: {str(e)}'}), 500
 
@@ -788,7 +850,7 @@ def get_air_quality_layer_data(conn, filters):
         """
 
         if date_filter:
-            query += f" AND date >= '{date_filter[0]}' AND date <= '{date_filter[1]}'"
+            query += f" AND data_date >= '{date_filter[0]}' AND data_date <= '{date_filter[1]}'"
         if borough:
             query += f" AND borough = '{borough}'"
 
