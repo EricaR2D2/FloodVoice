@@ -274,6 +274,12 @@ def choropleth_map(illness_type):
         else:
             print(f"   ⚠️ DataFrame is EMPTY - no data found!")
 
+        # KEY REFINEMENT: Data availability detection for better user experience
+        # This refinement was added to solve the problem where users would see blank maps
+        # without knowing if it was a loading issue or genuinely no data available.
+        # By detecting data availability here and passing it via custom headers,
+        # the frontend can show appropriate "No data available" messages instead of
+        # leaving users confused with empty visualizations.
         data_found = not illness_data.empty
         print(f"   Data found for {illness_type}: {data_found} ({len(illness_data)} records)")
 
@@ -332,7 +338,12 @@ def choropleth_map(illness_type):
             map_path = os.path.join('static', map_filename)
             choropleth_map.save(map_path)
 
-            # Create response with custom header indicating data status
+            # KEY REFINEMENT: Custom header communication between backend and frontend
+            # This refinement implements a clean separation of concerns where the backend
+            # detects data availability and communicates it to the frontend via HTTP headers.
+            # The frontend JavaScript can then read the 'X-Data-Found' header to decide
+            # whether to show the map or display a "No data available" message.
+            # This approach is more reliable than trying to detect empty maps in JavaScript.
             response = make_response(choropleth_map._repr_html_())
             response.headers['X-Data-Found'] = 'true' if data_found else 'false'
             response.headers['Content-Type'] = 'text/html'

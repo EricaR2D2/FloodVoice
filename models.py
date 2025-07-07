@@ -9,6 +9,15 @@ from datetime import datetime
 
 DATABASE_PATH = 'public_health_data.db'
 
+def get_db_connection():
+    """Get optimized database connection with proper settings."""
+    conn = sqlite3.connect(DATABASE_PATH, timeout=30.0)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA cache_size=10000;")
+    conn.execute("PRAGMA temp_store=memory;")
+    return conn
+
 class User(UserMixin):
     """User model for authentication."""
     
@@ -30,7 +39,7 @@ class User(UserMixin):
     @staticmethod
     def get(user_id):
         """Get user by ID."""
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         try:
@@ -56,7 +65,7 @@ class User(UserMixin):
     @staticmethod
     def get_by_username(username):
         """Get user by username."""
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         try:
@@ -81,7 +90,7 @@ class User(UserMixin):
     
     def save(self):
         """Save user to database."""
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         try:
@@ -112,7 +121,7 @@ class User(UserMixin):
     def update_last_login(self):
         """Update last login timestamp."""
         self.last_login = datetime.now().isoformat()
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         try:
@@ -125,7 +134,7 @@ class User(UserMixin):
 
 def init_user_db():
     """Initialize users table in database."""
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     try:

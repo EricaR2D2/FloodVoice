@@ -76,39 +76,82 @@ class ChoroplethMapSystem:
         props = feature['properties']
         return props.get('ZCTA5CE10') or props.get('MODZCTA') or ''
 
-    def filter_nyc_zip_codes(self, zip_boundaries):
-        """Filter to only NYC ZIP codes (10000-11999 range)"""
+    def filter_nyc_zip_codes(self, borough=None, zip_code=None):
+        """Filter NYC ZIP codes by borough and/or specific ZIP code
 
-        if not zip_boundaries:
+        Args:
+            borough (str, optional): Borough name to filter by (case-insensitive)
+            zip_code (str, optional): Specific ZIP code to filter by
+
+        Returns:
+            dict: Valid GeoJSON FeatureCollection with filtered features
+        """
+
+        print(f"🔍 FILTERING GEOJSON DATA:")
+        print(f"   Borough filter: {borough}")
+        print(f"   ZIP code filter: {zip_code}")
+
+        # 1. Start with a copy of the full, original GeoJSON data
+        if not self.zip_boundaries:
+            print(f"   ⚠️ No zip_boundaries data available!")
             return None
 
-        nyc_features = []
+        # 2. If both filters are None/empty, return deep copy of original data
+        if not borough and not zip_code:
+            print(f"   No filters applied - returning full dataset")
+            import copy
+            result = copy.deepcopy(self.zip_boundaries)
+            print(f"   Returned {len(result.get('features', []))} features (unfiltered)")
+            return result
 
-        for feature in zip_boundaries['features']:
-            zip_code = self.extract_zip_code(feature)
+        # 3. Apply filters to the features list
+        print(f"   Applying filters to {len(self.zip_boundaries.get('features', []))} features...")
+        filtered_features = self.zip_boundaries['features']
 
-            # NYC ZIP codes are generally in the 10000-11999 range
-            if zip_code and zip_code.isdigit():
-                zip_int = int(zip_code)
-                if 10000 <= zip_int <= 11999:
-                    nyc_features.append(feature)
+        # Filter by borough if provided
+        if borough:
+            print(f"   Filtering by borough: {borough}")
+            borough_filtered = []
+            for feature in filtered_features:
+                feature_borough = feature.get('properties', {}).get('boro_name', '')
+                if feature_borough.lower() == borough.lower():
+                    borough_filtered.append(feature)
+            filtered_features = borough_filtered
+            print(f"   After borough filter: {len(filtered_features)} features")
 
-        if nyc_features:
-            filtered_data = {
-                'type': 'FeatureCollection',
-                'features': nyc_features
-            }
-            print(f"✅ Filtered to {len(nyc_features)} NYC ZIP codes")
-            return filtered_data
+        # Filter by ZIP code if provided
+        if zip_code:
+            print(f"   Filtering by ZIP code: {zip_code}")
+            zip_filtered = []
+            for feature in filtered_features:
+                feature_zip = feature.get('properties', {}).get('MODZCTA', '')
+                if str(feature_zip) == str(zip_code):
+                    zip_filtered.append(feature)
+            filtered_features = zip_filtered
+            print(f"   After ZIP code filter: {len(filtered_features)} features")
 
-        return None
+        # 4. Construct and return new, valid GeoJSON dictionary
+        result = {}
+
+        # Copy all original top-level keys
+        for key, value in self.zip_boundaries.items():
+            if key != 'features':
+                result[key] = value
+
+        # Set the filtered features
+        result['features'] = filtered_features
+
+        print(f"   ✅ Final filtered result: {len(filtered_features)} features")
+        print(f"   Result keys: {list(result.keys())}")
+
+        return result
     
     def create_choropleth_map(self, illness_type, date_range=None, borough_filter=None):
         """Create a choropleth map showing illness data by ZIP code boundaries"""
 
         print(f"🗺️ Creating choropleth map for {illness_type}...")
 
-        # Create base map with light, colorful theme
+        # Create base map centered on NYC with light, colorful theme
         m = folium.Map(
             location=self.map_center,
             zoom_start=self.default_zoom,
@@ -124,31 +167,36 @@ class ChoroplethMapSystem:
             control=True
         ).add_to(m)
 
-        # Get illness data by ZIP code
-        illness_data = self.get_illness_data_by_zip(illness_type, date_range, borough_filter)
+        # Fetch health data into DataFrame
+        df = self.get_illness_data_by_zip(illness_type, date_range, borough_filter)
 
-        # Check if data is empty - if so, return base map with boundaries only
-        if illness_data.empty:
-            print(f"⚠️ No data available for {illness_type}, showing base map with boundaries only")
+        # Check if DataFrame is empty
+        if df.empty:
+            print(f"⚠️ No data found for {illness_type} with current filters")
+            print(f"   Filters: date_range={date_range}, borough={borough_filter}")
+            print(f"   Creating base map with ZIP code boundaries only...")
+
+            # Do NOT attempt to create folium.Choropleth layer
+            # Instead, create base map with only GeoJSON boundaries
             if self.zip_boundaries:
-                nyc_boundaries = self.filter_nyc_zip_codes(self.zip_boundaries)
+                nyc_boundaries = self.filter_nyc_zip_codes(borough=borough_filter)
                 if nyc_boundaries:
-                    # Add just the boundaries without choropleth coloring
+                    # Add base GeoJSON layer of all ZIP code boundaries
                     folium.GeoJson(
                         nyc_boundaries,
                         style_function=lambda feature: {
-                            'fillColor': '#E2E8F0',  # Light gray
-                            'color': '#2C3E50',
-                            'weight': 2,
-                            'fillOpacity': 0.3,
-                            'opacity': 1.0
+                            'fillColor': '#F8F9FA',      # Very light gray fill
+                            'color': '#6C757D',          # Medium gray border
+                            'weight': 1.5,
+                            'fillOpacity': 0.2,          # Low opacity so boundaries are subtle
+                            'opacity': 0.8
                         },
                         popup=folium.GeoJsonPopup(
                             fields=['MODZCTA'],
                             aliases=['ZIP Code:'],
                             localize=True,
                             labels=True,
-                            style="background-color: rgba(0,0,0,0.8); color: white;",
+                            style="background-color: rgba(0,0,0,0.8); color: white; padding: 8px;",
                         ),
                         tooltip=folium.GeoJsonTooltip(
                             fields=['MODZCTA'],
@@ -161,28 +209,51 @@ class ChoroplethMapSystem:
                                 border: 2px solid white;
                                 border-radius: 3px;
                                 color: white;
+                                padding: 5px;
                             """,
                             max_width=200,
                         )
                     ).add_to(m)
-            print(f"✅ Base choropleth map created for {illness_type} (no data)")
+
+                    # Add a message overlay indicating no data
+                    no_data_html = f"""
+                    <div style="position: fixed;
+                                top: 10px; left: 50px; width: 300px; height: 80px;
+                                background-color: rgba(255, 255, 255, 0.9);
+                                border: 2px solid #FFC107;
+                                border-radius: 5px;
+                                padding: 10px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                z-index: 9999;">
+                        <strong>⚠️ No Data Available</strong><br>
+                        No {illness_type} data found for the selected filters.<br>
+                        Showing ZIP code boundaries only.
+                    </div>
+                    """
+                    m.get_root().html.add_child(folium.Element(no_data_html))
+
+            print(f"✅ Base choropleth map created for {illness_type} (no data available)")
             return m
+
+        # DataFrame is NOT empty - proceed with existing logic to create choropleth
+        print(f"📊 Found {len(df)} data points for {illness_type}")
 
         if self.zip_boundaries:
             # Filter to NYC ZIP codes only
-            nyc_boundaries = self.filter_nyc_zip_codes(self.zip_boundaries)
+            nyc_boundaries = self.filter_nyc_zip_codes(borough=borough_filter)
 
             if nyc_boundaries:
-                # Create choropleth layer
-                self.add_choropleth_layer(m, nyc_boundaries, illness_data, illness_type)
+                # Create choropleth layer with actual data
+                self.add_choropleth_layer(m, nyc_boundaries, df, illness_type)
 
                 # Add legend
-                self.add_choropleth_legend(m, illness_type, illness_data)
+                self.add_choropleth_legend(m, illness_type, df)
 
                 # Add data summary
-                self.add_data_summary(m, illness_data, illness_type)
+                self.add_data_summary(m, df, illness_type)
 
-        print(f"✅ Choropleth map created for {illness_type}")
+        print(f"✅ Choropleth map created for {illness_type} with data visualization")
         return m
     
     def get_illness_data_by_zip(self, illness_type, date_range=None, borough_filter=None, zip_code_filter=None):
@@ -583,7 +654,7 @@ class ChoroplethMapSystem:
             illness_data = self.get_illness_data_by_zip(illness_type, date_range, borough_filter)
 
             if not illness_data.empty and self.zip_boundaries:
-                nyc_boundaries = self.filter_nyc_zip_codes(self.zip_boundaries)
+                nyc_boundaries = self.filter_nyc_zip_codes(borough=borough_filter)
 
                 if nyc_boundaries:
                     # Create feature group for this illness type

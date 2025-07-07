@@ -235,10 +235,34 @@ class PatternDetector:
         except:
             data['nyc_covid'] = pd.DataFrame()
 
+        # Load weather data
+        try:
+            data['weather'] = pd.read_sql_query(f"""
+                SELECT * FROM real_weather_data
+                WHERE date >= date('now', '-{days_back} days')
+                ORDER BY date
+            """, self.conn)
+            data['weather']['date'] = pd.to_datetime(data['weather']['date'])
+        except:
+            data['weather'] = pd.DataFrame()
+
+        # Load tick-borne disease data
+        try:
+            data['tick_diseases'] = pd.read_sql_query(f"""
+                SELECT * FROM tick_disease_surveillance
+                WHERE report_date >= date('now', '-{days_back} days')
+                ORDER BY report_date
+            """, self.conn)
+            data['tick_diseases']['report_date'] = pd.to_datetime(data['tick_diseases']['report_date'])
+        except:
+            data['tick_diseases'] = pd.DataFrame()
+
         print(f"Loaded historical hospital data: {len(data['hospital'])} records")
         print(f"Loaded historical air quality data: {len(data['air_quality'])} records")
         print(f"Loaded historical CDC ILI data: {len(data['cdc_ili'])} records")
         print(f"Loaded historical NYC COVID data: {len(data['nyc_covid'])} records")
+        print(f"Loaded historical weather data: {len(data['weather'])} records")
+        print(f"Loaded historical tick disease data: {len(data['tick_diseases'])} records")
 
         return data
     
@@ -451,18 +475,22 @@ class PatternDetector:
             ]
             if not weather_data.empty:
                 # Get average weather conditions across all stations
-                avg_weather = weather_data.groupby('date').agg({
+                # Use actual column names from real_weather_data table
+                agg_dict = {
                     'temp_avg_f': 'mean',
-                    'precipitation_in': 'mean',
-                    'humidity_percent': 'mean',
                     'tick_risk_score': 'mean'
-                }).iloc[0]
+                }
+
+                # Add humidity if available (column name is humidity_avg, not humidity_percent)
+                if 'humidity_avg' in weather_data.columns:
+                    agg_dict['humidity_avg'] = 'mean'
+
+                avg_weather = weather_data.groupby('date').agg(agg_dict).iloc[0]
 
                 context['weather'] = {
-                    'temperature_f': round(avg_weather['temp_avg_f'], 1),
-                    'precipitation_in': round(avg_weather['precipitation_in'], 2),
-                    'humidity_percent': round(avg_weather['humidity_percent'], 1),
-                    'tick_risk_score': round(avg_weather['tick_risk_score'], 0)
+                    'temperature_f': round(avg_weather['temp_avg_f'], 1) if 'temp_avg_f' in avg_weather else 0,
+                    'humidity_percent': round(avg_weather['humidity_avg'], 1) if 'humidity_avg' in avg_weather else 0,
+                    'tick_risk_score': round(avg_weather['tick_risk_score'], 0) if 'tick_risk_score' in avg_weather else 0
                 }
 
         # Tick-borne disease activity for the same week
@@ -591,11 +619,11 @@ class PatternDetector:
             # Weather correlation for spikes
             if 'weather' in context:
                 weather = context['weather']
-                if weather['tick_risk_score'] >= 70:
+                if weather.get('tick_risk_score', 0) >= 70:
                     context_factors.append(f"High tick activity risk (score: {weather['tick_risk_score']}) due to favorable weather conditions")
-                if weather['temperature_f'] > 80:
+                if weather.get('temperature_f', 0) > 80:
                     context_factors.append(f"High temperature ({weather['temperature_f']}°F) may increase heat-related health stress")
-                if weather['humidity_percent'] > 80:
+                if weather.get('humidity_percent', 0) > 80:
                     context_factors.append(f"High humidity ({weather['humidity_percent']}%) could exacerbate respiratory conditions")
 
             # Tick-borne disease correlation
@@ -616,11 +644,11 @@ class PatternDetector:
             # Weather correlation for drops (positive trends)
             if 'weather' in context:
                 weather = context['weather']
-                if weather['tick_risk_score'] < 30:
+                if weather.get('tick_risk_score', 0) < 30:
                     context_factors.append(f"Low tick activity risk (score: {weather['tick_risk_score']}) due to unfavorable weather for vectors")
-                if 45 <= weather['temperature_f'] <= 75:
+                if 45 <= weather.get('temperature_f', 0) <= 75:
                     context_factors.append(f"Optimal temperature ({weather['temperature_f']}°F) supporting overall health")
-                if weather['humidity_percent'] < 60:
+                if weather.get('humidity_percent', 0) < 60:
                     context_factors.append(f"Comfortable humidity levels ({weather['humidity_percent']}%) reducing respiratory stress")
 
             # Additional air quality context for drops

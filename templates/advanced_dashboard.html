@@ -178,25 +178,54 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.8);
+            background-color: rgba(0,0,0,0.85);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 9999;
+            backdrop-filter: blur(3px);
         }
-        
+
+        .loading-content {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+
         .spinner {
             border: 4px solid rgba(255,255,255,0.3);
             border-radius: 50%;
-            border-top: 4px solid var(--accent-color);
-            width: 50px;
-            height: 50px;
+            border-top: 4px solid #4CAF50;
+            width: 60px;
+            height: 60px;
             animation: spin 1s linear infinite;
+            margin: 0 auto 20px auto;
         }
-        
+
+        .loading-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .loading-subtext {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 0.4; }
         }
         
         .alert-panel {
@@ -240,9 +269,10 @@
 <body>
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
-        <div class="text-center">
+        <div class="loading-content">
             <div class="spinner"></div>
-            <p class="mt-3">Loading health data...</p>
+            <div class="loading-text">Processing Filters</div>
+            <div class="loading-subtext">Loading health data and updating visualizations...</div>
         </div>
     </div>
 
@@ -574,7 +604,7 @@
             initializeMap();
             initializeCharts();
             setupEventListeners();
-            loadInitialData();
+            loadInitialDashboardView();
         });
 
         // Initialize map
@@ -780,34 +810,185 @@
             document.getElementById('activeSummary').textContent = summary.join(', ');
         }
 
-        // Apply filters and refresh data
-        function applyFilters(event) {
-            event.preventDefault();
-            console.log("Filters applied via JavaScript.");
-            showLoading();
+        // Gather current filter state from DOM elements
+        function gatherFilterState() {
+            const filters = {
+                illnessTypes: [],
+                dateRange: '',
+                borough: '',
+                zipCode: '',
+                riskLevels: []
+            };
 
-            // Check if we should show choropleth or point view
-            if (currentFilters.illnessTypes.length === 1) {
-                loadChoroplethView(currentFilters.illnessTypes[0]);
-                // Update button text
+            // Get selected illness types
+            document.querySelectorAll('.illness-checkbox:checked').forEach(checkbox => {
+                filters.illnessTypes.push(checkbox.dataset.illness);
+            });
+
+            // Get date range
+            filters.dateRange = document.getElementById('dateRange').value;
+
+            // Get geographic filters
+            filters.borough = document.getElementById('boroughFilter').value;
+            filters.zipCode = document.getElementById('zipCodeFilter').value;
+
+            // Get risk levels
+            document.querySelectorAll('.risk-checkbox:checked').forEach(checkbox => {
+                filters.riskLevels.push(checkbox.value);
+            });
+
+            return filters;
+        }
+
+        // Fetch all dashboard data concurrently based on filters
+        async function fetchDashboardData(filters) {
+            const promises = [];
+            const data = {};
+
+            // Determine which type of map data to fetch
+            if (filters.illnessTypes.length === 1) {
+                // Fetch choropleth data for single illness type
+                const params = new URLSearchParams({
+                    date_range: filters.dateRange,
+                    borough: filters.borough,
+                    zip_code: filters.zipCode
+                });
+
+                const choroplethPromise = fetch(`/choropleth-map/${filters.illnessTypes[0]}?${params}`)
+                    .then(response => response.text());
+                promises.push(choroplethPromise.then(result => { data.choroplethData = result; }));
+            } else {
+                // Fetch point-based map data for multiple illness types
+                const mapPromise = fetch('/api/map-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(filters)
+                }).then(response => response.json());
+                promises.push(mapPromise.then(result => { data.mapData = result; }));
+            }
+
+            // Fetch dashboard statistics, charts, and table data
+            const statsPromise = fetch('/api/map-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(filters)
+            }).then(response => response.json());
+            promises.push(statsPromise.then(result => { data.dashboardData = result; }));
+
+            // Wait for all promises to resolve
+            await Promise.all(promises);
+            return data;
+        }
+
+        // Update all dashboard UI components with fetched data
+        function updateDashboardUI(data, filters) {
+            // Update map based on data type
+            if (data.choroplethData) {
+                // Update choropleth view for single illness type
+                updateChoroplethMap(data.choroplethData, filters.illnessTypes[0]);
+
+                // Update button text for choropleth view
                 const button = document.getElementById('toggleChoropleth');
                 if (button) {
                     button.innerHTML = '<i class="fas fa-circle"></i> Point View';
                 }
-            } else {
+            } else if (data.mapData) {
                 // Update point-based map for multiple illness types
-                updateMapLayers();
-                // Reset button text
+                updatePointBasedMap(data.mapData, filters);
+
+                // Update button text for point view
                 const button = document.getElementById('toggleChoropleth');
                 if (button) {
                     button.innerHTML = '<i class="fas fa-map"></i> ZIP Boundaries';
                 }
             }
 
-            // Update other components
-            loadDashboardStats();
+            // Update dashboard components with stats data
+            if (data.dashboardData && data.dashboardData.success) {
+                updateStats(data.dashboardData.stats);
+                updateCharts(data.dashboardData.chart_data);
+                updateDataTable(data.dashboardData.table_data);
+                checkForAlerts(data.dashboardData.alerts);
+            }
+        }
 
-            hideLoading();
+        // Apply filters and refresh data (refactored orchestrator)
+        async function applyFilters(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            console.log("Filters applied via JavaScript.");
+
+            try {
+                // Show loading indicator
+                showLoading();
+
+                // Gather current filter state from DOM
+                const filters = gatherFilterState();
+
+                // Update global currentFilters for backward compatibility
+                currentFilters = filters;
+                updateFilterSummary();
+
+                // Fetch all dashboard data concurrently
+                const data = await fetchDashboardData(filters);
+
+                // Update all UI components with the fetched data
+                updateDashboardUI(data, filters);
+
+                console.log("All filter operations completed successfully");
+            } catch (error) {
+                console.error("Error during filter operations:", error);
+                showError("Failed to apply filters. Please try again.");
+            } finally {
+                // Always hide loading indicator
+                hideLoading();
+            }
+        }
+
+        // Helper function to update choropleth map
+        function updateChoroplethMap(choroplethData, illnessType) {
+            // choroplethData is now HTML content, not JSON
+            const mapContainer = document.getElementById('healthMap');
+            if (mapContainer && choroplethData && choroplethData.trim().length > 0) {
+                // Replace the map container with choropleth HTML
+                mapContainer.innerHTML = choroplethData;
+
+                // Hide no data message
+                toggleNoDataMessage(false);
+            } else {
+                // Show no data message
+                toggleNoDataMessage(true);
+            }
+        }
+
+        // Helper function to update point-based map
+        function updatePointBasedMap(mapData, filters) {
+            // Hide no data message when showing point-based map
+            toggleNoDataMessage(false);
+
+            // Clear existing layers
+            Object.values(mapLayers).forEach(layer => {
+                healthMap.removeLayer(layer);
+            });
+            mapLayers = {};
+
+            // Add filtered layers for each illness type
+            if (mapData.success) {
+                filters.illnessTypes.forEach(illnessType => {
+                    addMapLayerFromData(illnessType, mapData, filters);
+                });
+            }
+        }
+
+        // Helper function to add map layer from existing data
+        function addMapLayerFromData(illnessType, mapData, filters) {
+            // This function would need to be implemented based on your existing
+            // addMapLayer logic, but using the already-fetched data instead of
+            // making another API call. For now, fall back to the existing async method.
+            addMapLayerAsync(illnessType).catch(error => {
+                console.error(`Error loading ${illnessType} layer:`, error);
+            });
         }
 
         // Reset all filters to default
@@ -834,7 +1015,7 @@
             applyFilters();
         }
 
-        // Load initial data
+        // Load initial data (legacy function - shows loading overlay)
         function loadInitialData() {
             showLoading();
 
@@ -850,8 +1031,29 @@
             loadDashboardStats();
         }
 
-        // Load choropleth view for single illness type
-        function loadChoroplethView(illnessType) {
+        // Load initial dashboard view without loading overlay (for page load)
+        async function loadInitialDashboardView() {
+            try {
+                console.log("Loading initial dashboard view...");
+
+                // Gather default filter state from DOM
+                const filters = gatherFilterState();
+
+                // Fetch all dashboard data concurrently
+                const data = await fetchDashboardData(filters);
+
+                // Update all UI components with the fetched data
+                updateDashboardUI(data, filters);
+
+                console.log("Initial dashboard view loaded successfully");
+            } catch (error) {
+                console.error("Error loading initial dashboard view:", error);
+                showError("Failed to load dashboard data. Please refresh the page.");
+            }
+        }
+
+        // Load choropleth view for single illness type (async version)
+        function loadChoroplethViewAsync(illnessType) {
             // Clear existing layers first
             if (healthMap) {
                 Object.values(mapLayers).forEach(layer => {
@@ -866,7 +1068,7 @@
                 zip_code: currentFilters.zipCode
             });
 
-            fetch(`/choropleth-map/${illnessType}?${params}`)
+            return fetch(`/choropleth-map/${illnessType}?${params}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -906,20 +1108,25 @@
                         // Re-initialize map if needed
                         initializeMap();
                         // Load single illness as point markers
-                        addMapLayer(illnessType);
-
-                        // Update button to show fallback state
-                        const button = document.getElementById('toggleChoropleth');
-                        if (button) {
-                            button.innerHTML = '<i class="fas fa-map"></i> ZIP Boundaries (Fallback: Points)';
-                        }
+                        return addMapLayerAsync(illnessType).then(() => {
+                            // Update button to show fallback state
+                            const button = document.getElementById('toggleChoropleth');
+                            if (button) {
+                                button.innerHTML = '<i class="fas fa-map"></i> ZIP Boundaries (Fallback: Points)';
+                            }
+                        });
                     } else {
                         console.error('Map not initialized for fallback');
-                        showError('Failed to load map data');
+                        throw new Error('Failed to load map data');
                     }
-                })
-                .finally(() => {
-                    hideLoading();
+                });
+        }
+
+        // Load choropleth view for single illness type (legacy version for compatibility)
+        function loadChoroplethView(illnessType) {
+            loadChoroplethViewAsync(illnessType)
+                .catch(error => {
+                    showError('Failed to load choropleth map');
                 });
         }
 
@@ -960,9 +1167,9 @@
             });
         }
 
-        // Load dashboard statistics and other data
-        function loadDashboardStats() {
-            fetch('/api/map-data', {
+        // Load dashboard statistics and other data (async version)
+        function loadDashboardStatsAsync() {
+            return fetch('/api/map-data', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -977,10 +1184,15 @@
                     updateDataTable(data.table_data);
                     checkForAlerts(data.alerts);
                 }
-            })
-            .catch(error => {
-                console.error('Error loading dashboard data:', error);
             });
+        }
+
+        // Load dashboard statistics and other data (legacy version for compatibility)
+        function loadDashboardStats() {
+            loadDashboardStatsAsync()
+                .catch(error => {
+                    console.error('Error loading dashboard data:', error);
+                });
         }
 
         // Update map layers based on filters
@@ -1000,9 +1212,9 @@
             });
         }
 
-        // Add specific illness type layer to map
-        function addMapLayer(illnessType) {
-            fetch(`/api/map-layer/${illnessType}`, {
+        // Add specific illness type layer to map (async version)
+        function addMapLayerAsync(illnessType) {
+            return fetch(`/api/map-layer/${illnessType}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1036,10 +1248,34 @@
                     mapLayers[illnessType] = layer;
                     layer.addTo(healthMap);
                 }
-            })
-            .catch(error => {
-                console.error(`Error loading ${illnessType} layer:`, error);
             });
+        }
+
+        // Add specific illness type layer to map (legacy version for compatibility)
+        function addMapLayer(illnessType) {
+            addMapLayerAsync(illnessType)
+                .catch(error => {
+                    console.error(`Error loading ${illnessType} layer:`, error);
+                });
+        }
+
+        // Update map layers based on filters (async version)
+        function updateMapLayersAsync() {
+            // Hide no data message when showing point-based map
+            toggleNoDataMessage(false);
+
+            // Clear existing layers
+            Object.values(mapLayers).forEach(layer => {
+                healthMap.removeLayer(layer);
+            });
+            mapLayers = {};
+
+            // Add filtered layers - return Promise.all to wait for all layers
+            const layerPromises = currentFilters.illnessTypes.map(illnessType =>
+                addMapLayerAsync(illnessType)
+            );
+
+            return Promise.all(layerPromises);
         }
 
         // Show/hide map layers
@@ -1162,12 +1398,28 @@
         }
 
         // Utility functions
-        function showLoading() {
-            document.getElementById('loadingOverlay').style.display = 'flex';
+        function showLoading(text = 'Processing Filters', subtext = 'Loading health data and updating visualizations...') {
+            const overlay = document.getElementById('loadingOverlay');
+            const loadingText = overlay.querySelector('.loading-text');
+            const loadingSubtext = overlay.querySelector('.loading-subtext');
+
+            if (loadingText) loadingText.textContent = text;
+            if (loadingSubtext) loadingSubtext.textContent = subtext;
+
+            overlay.style.display = 'flex';
         }
 
         function hideLoading() {
             document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function updateLoadingText(text, subtext) {
+            const overlay = document.getElementById('loadingOverlay');
+            const loadingText = overlay.querySelector('.loading-text');
+            const loadingSubtext = overlay.querySelector('.loading-subtext');
+
+            if (loadingText) loadingText.textContent = text;
+            if (loadingSubtext && subtext) loadingSubtext.textContent = subtext;
         }
 
         function showError(message) {
