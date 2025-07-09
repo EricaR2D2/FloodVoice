@@ -4,16 +4,150 @@ import numpy as np
 import sqlite3
 import os
 from datetime import datetime, timedelta
+import json
 
 # --- Set up output directory ---
 OUTPUT_DIR = r"C:\Users\ricar\PublicHealthMVP"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# --- 1. Fetch NYC Open Data (REAL-TIME COVID-19 Daily Counts) ---
-# Real-time NYC COVID dataset with borough-level breakdowns
-# Updated daily with current surveillance data
-NYC_COVID_URL = "https://data.cityofnewyork.us/api/views/rc75-m7u3/rows.csv?accessType=DOWNLOAD"
-nyc_csv_path = os.path.join(OUTPUT_DIR, "nyc_covid_realtime_data.csv")
+# --- Database Configuration ---
+DATABASE_PATH = os.path.join(OUTPUT_DIR, 'public_health_data.db')
+
+def get_db_connection():
+    """Get optimized database connection with proper settings."""
+    conn = sqlite3.connect(DATABASE_PATH, timeout=30.0)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA cache_size=10000;")
+    conn.execute("PRAGMA temp_store=memory;")
+    return conn
+
+def standardize_borough_name(borough):
+    """Standardize borough names to consistent format."""
+    if pd.isna(borough) or borough is None:
+        return None
+
+    borough = str(borough).strip().upper()
+
+    # Mapping for common variations
+    borough_mapping = {
+        'MANHATTAN': 'Manhattan',
+        'MN': 'Manhattan',
+        'NEW YORK': 'Manhattan',
+        'BRONX': 'Bronx',
+        'BX': 'Bronx',
+        'BROOKLYN': 'Brooklyn',
+        'BK': 'Brooklyn',
+        'KINGS': 'Brooklyn',
+        'QUEENS': 'Queens',
+        'QN': 'Queens',
+        'STATEN ISLAND': 'Staten Island',
+        'SI': 'Staten Island',
+        'RICHMOND': 'Staten Island'
+    }
+
+    return borough_mapping.get(borough, borough.title())
+
+# --- Part 1: COVID-19 Data Ingestion ---
+def fetch_and_process_covid_data():
+    """
+    Fetch and process COVID-19 data from NYC Open Data API.
+    Returns borough-level case counts by date.
+    """
+    print("🦠 Fetching COVID-19 data from NYC Open Data...")
+
+    try:
+        # NYC Open Data API endpoint for COVID-19 cases by borough
+        api_url = "https://data.cityofnewyork.us/resource/xywu-7bv9.json"
+
+        # Use Socrata API parameters to get most recent records
+        params = {
+            "$limit": 50000,  # Get substantial amount of data
+            "$order": "date_of_interest DESC"  # Most recent first
+        }
+
+        response = requests.get(api_url, params=params)
+        response.raise_for_status()
+
+        data = response.json()
+        print(f"Retrieved {len(data)} COVID-19 records from NYC Open Data")
+
+        if not data:
+            print("No COVID-19 data returned from API")
+            return pd.DataFrame()
+
+        # Convert to DataFrame
+        df = pd.DataFrame(data)
+
+        # Print available columns to understand the data structure
+        print("Available COVID-19 columns:", df.columns.tolist())
+        if len(df) > 0:
+            print("Sample COVID-19 record:", df.iloc[0].to_dict())
+
+        # Process the data - extract borough, case count, and date
+        processed_data = []
+
+        for _, row in df.iterrows():
+            try:
+                # Extract required fields
+                date_str = row.get('date_of_interest', '')
+                borough = row.get('boro', '')
+                case_count = row.get('case_count', 0)
+
+                # Skip if essential data is missing
+                if not date_str or not borough:
+                    continue
+
+                # Standardize borough name
+                standardized_borough = standardize_borough_name(borough)
+                if not standardized_borough:
+                    continue
+
+                # Convert case count to integer
+                try:
+                    case_count = int(float(case_count)) if case_count else 0
+                except (ValueError, TypeError):
+                    case_count = 0
+
+                # Parse date
+                try:
+                    # Handle different date formats
+                    if 'T' in date_str:
+                        date_obj = datetime.strptime(date_str.split('T')[0], '%Y-%m-%d')
+                    else:
+                        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+
+                    formatted_date = date_obj.strftime('%Y-%m-%d')
+                except (ValueError, TypeError):
+                    continue
+
+                processed_data.append({
+                    'date': formatted_date,
+                    'borough': standardized_borough,
+                    'case_count': case_count
+                })
+
+            except Exception as e:
+                print(f"Error processing COVID-19 record: {e}")
+                continue
+
+        if processed_data:
+            processed_df = pd.DataFrame(processed_data)
+            print(f"✅ Successfully processed {len(processed_df)} COVID-19 records")
+
+            # Show summary
+            print(f"   Date range: {processed_df['date'].min()} to {processed_df['date'].max()}")
+            print(f"   Boroughs: {processed_df['borough'].unique().tolist()}")
+            print(f"   Total cases: {processed_df['case_count'].sum():,}")
+
+            return processed_df
+        else:
+            print("❌ No valid COVID-19 data processed")
+            return pd.DataFrame()
+
+    except Exception as e:
+        print(f"❌ Error fetching COVID-19 data: {e}")
+        return pd.DataFrame()
 
 print("🔄 Fetching REAL-TIME NYC COVID-19 surveillance data...")
 print(f"📊 Data source: NYC Open Data - Daily COVID counts by borough")

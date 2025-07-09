@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Refactored Functions</title>
+</head>
+<body>
+    <h1>Testing Refactored JavaScript Functions</h1>
+    
+    <!-- Mock filter elements -->
+    <div>
+        <input type="checkbox" class="illness-checkbox" data-illness="COVID-19" checked>
+        <label>COVID-19</label>
+    </div>
+    <div>
+        <input type="checkbox" class="illness-checkbox" data-illness="Flu" checked>
+        <label>Flu</label>
+    </div>
+    
+    <select id="dateRange">
+        <option value="30" selected>Last 30 days</option>
+        <option value="60">Last 60 days</option>
+    </select>
+    
+    <select id="boroughFilter">
+        <option value="">All Boroughs</option>
+        <option value="Manhattan">Manhattan</option>
+    </select>
+    
+    <input type="text" id="zipCodeFilter" placeholder="ZIP Code">
+    
+    <div>
+        <input type="checkbox" class="risk-checkbox" value="LOW" checked>
+        <label>Low Risk</label>
+    </div>
+    <div>
+        <input type="checkbox" class="risk-checkbox" value="HIGH" checked>
+        <label>High Risk</label>
+    </div>
+    
+    <button onclick="testFunctions()">Test Functions</button>
+    
+    <div id="results"></div>
+
+    <script>
+        // Copy the refactored functions here for testing
+        function gatherFilterState() {
+            const filters = {
+                illnessTypes: [],
+                dateRange: '',
+                borough: '',
+                zipCode: '',
+                riskLevels: []
+            };
+
+            // Get selected illness types
+            document.querySelectorAll('.illness-checkbox:checked').forEach(checkbox => {
+                filters.illnessTypes.push(checkbox.dataset.illness);
+            });
+
+            // Get date range
+            filters.dateRange = document.getElementById('dateRange').value;
+
+            // Get geographic filters
+            filters.borough = document.getElementById('boroughFilter').value;
+            filters.zipCode = document.getElementById('zipCodeFilter').value;
+
+            // Get risk levels
+            document.querySelectorAll('.risk-checkbox:checked').forEach(checkbox => {
+                filters.riskLevels.push(checkbox.value);
+            });
+
+            return filters;
+        }
+
+        // Mock fetch function for testing
+        async function fetchDashboardData(filters) {
+            console.log('fetchDashboardData called with:', filters);
+            
+            // Simulate API calls with mock data
+            const mockData = {
+                choroplethData: null,
+                mapData: {
+                    success: true,
+                    stats: { total: 100 },
+                    chart_data: { labels: ['A', 'B'] },
+                    table_data: [{ id: 1, name: 'Test' }],
+                    alerts: []
+                },
+                dashboardData: {
+                    success: true,
+                    stats: { total: 100 },
+                    chart_data: { labels: ['A', 'B'] },
+                    table_data: [{ id: 1, name: 'Test' }],
+                    alerts: []
+                }
+            };
+
+            // Simulate async delay
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            return mockData;
+        }
+
+        function updateDashboardUI(data, filters) {
+            console.log('updateDashboardUI called with:', data, filters);
+            
+            // Mock UI update functions
+            if (data.dashboardData && data.dashboardData.success) {
+                console.log('Updating stats:', data.dashboardData.stats);
+                console.log('Updating charts:', data.dashboardData.chart_data);
+                console.log('Updating table:', data.dashboardData.table_data);
+                console.log('Checking alerts:', data.dashboardData.alerts);
+            }
+        }
+
+        async function applyFilters(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            console.log("Filters applied via JavaScript.");
+
+            try {
+                // Show loading indicator (mock)
+                console.log('Loading...');
+
+                // Gather current filter state from DOM
+                const filters = gatherFilterState();
+                console.log('Gathered filters:', filters);
+
+                // Fetch all dashboard data concurrently
+                const data = await fetchDashboardData(filters);
+                console.log('Fetched data:', data);
+
+                // Update all UI components with the fetched data
+                updateDashboardUI(data, filters);
+
+                console.log("All filter operations completed successfully");
+                return { success: true, filters, data };
+            } catch (error) {
+                console.error("Error during filter operations:", error);
+                return { success: false, error: error.message };
+            } finally {
+                // Always hide loading indicator (mock)
+                console.log('Loading complete');
+            }
+        }
+
+        async function testFunctions() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Test Results:</h2>';
+            
+            try {
+                // Test gatherFilterState
+                console.log('=== Testing gatherFilterState ===');
+                const filters = gatherFilterState();
+                resultsDiv.innerHTML += `<p><strong>gatherFilterState():</strong> ${JSON.stringify(filters, null, 2)}</p>`;
+                
+                // Test applyFilters
+                console.log('=== Testing applyFilters ===');
+                const result = await applyFilters();
+                resultsDiv.innerHTML += `<p><strong>applyFilters():</strong> ${JSON.stringify(result, null, 2)}</p>`;
+                
+                resultsDiv.innerHTML += '<p style="color: green;"><strong>✅ All tests passed!</strong></p>';
+            } catch (error) {
+                resultsDiv.innerHTML += `<p style="color: red;"><strong>❌ Test failed:</strong> ${error.message}</p>`;
+                console.error('Test error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

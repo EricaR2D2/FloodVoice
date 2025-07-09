@@ -499,21 +499,21 @@ def get_filtered_statistics(filters):
 
         # Calculate COVID cases if selected
         if 'COVID-19' in illness_types:
-            # COVID data is stored by borough, not ZIP code
+            # Try new COVID daily counts table first, then fall back to old data
             if borough:
-                # Query specific borough
+                # Query specific borough from new COVID daily counts
                 borough_col_map = {
-                    'Bronx': 'BX_CASE_COUNT',
-                    'Brooklyn': 'BK_CASE_COUNT',
-                    'Manhattan': 'MN_CASE_COUNT',
-                    'Queens': 'QN_CASE_COUNT',
-                    'Staten Island': 'SI_CASE_COUNT'
+                    'Bronx': 'bx_case_count',
+                    'Brooklyn': 'bk_case_count',
+                    'Manhattan': 'mn_case_count',
+                    'Queens': 'qn_case_count',
+                    'Staten Island': 'si_case_count'
                 }
 
                 if borough in borough_col_map:
                     covid_query = f"""
                         SELECT SUM({borough_col_map[borough]}) as total_covid
-                        FROM nyc_covid_data
+                        FROM covid_daily_counts
                         WHERE {borough_col_map[borough]} IS NOT NULL
                     """
                     if date_filter:
@@ -522,12 +522,32 @@ def get_filtered_statistics(filters):
                     covid_result = pd.read_sql_query(covid_query, conn)
                     if not covid_result.empty and covid_result.iloc[0]['total_covid']:
                         total_cases += int(covid_result.iloc[0]['total_covid'])
+                    else:
+                        # Fallback to old data
+                        old_borough_col_map = {
+                            'Bronx': 'BX_CASE_COUNT',
+                            'Brooklyn': 'BK_CASE_COUNT',
+                            'Manhattan': 'MN_CASE_COUNT',
+                            'Queens': 'QN_CASE_COUNT',
+                            'Staten Island': 'SI_CASE_COUNT'
+                        }
+                        fallback_query = f"""
+                            SELECT SUM({old_borough_col_map[borough]}) as total_covid
+                            FROM nyc_covid_data
+                            WHERE {old_borough_col_map[borough]} IS NOT NULL
+                        """
+                        if date_filter:
+                            fallback_query += f" AND date_of_interest >= '{date_filter[0]}' AND date_of_interest <= '{date_filter[1]}'"
+
+                        fallback_result = pd.read_sql_query(fallback_query, conn)
+                        if not fallback_result.empty and fallback_result.iloc[0]['total_covid']:
+                            total_cases += int(fallback_result.iloc[0]['total_covid'])
             else:
-                # Query all boroughs
+                # Query all boroughs from new COVID daily counts
                 covid_query = """
-                    SELECT SUM(CASE_COUNT) as total_covid
-                    FROM nyc_covid_data
-                    WHERE CASE_COUNT IS NOT NULL
+                    SELECT SUM(case_count) as total_covid
+                    FROM covid_daily_counts
+                    WHERE case_count IS NOT NULL
                 """
                 if date_filter:
                     covid_query += f" AND date_of_interest >= '{date_filter[0]}' AND date_of_interest <= '{date_filter[1]}'"
@@ -535,6 +555,19 @@ def get_filtered_statistics(filters):
                 covid_result = pd.read_sql_query(covid_query, conn)
                 if not covid_result.empty and covid_result.iloc[0]['total_covid']:
                     total_cases += int(covid_result.iloc[0]['total_covid'])
+                else:
+                    # Fallback to old data
+                    fallback_query = """
+                        SELECT SUM(CASE_COUNT) as total_covid
+                        FROM nyc_covid_data
+                        WHERE CASE_COUNT IS NOT NULL
+                    """
+                    if date_filter:
+                        fallback_query += f" AND date_of_interest >= '{date_filter[0]}' AND date_of_interest <= '{date_filter[1]}'"
+
+                    fallback_result = pd.read_sql_query(fallback_query, conn)
+                    if not fallback_result.empty and fallback_result.iloc[0]['total_covid']:
+                        total_cases += int(fallback_result.iloc[0]['total_covid'])
 
         # Calculate Hospital ER visits if selected
         if 'Hospital ER' in illness_types:
@@ -553,6 +586,25 @@ def get_filtered_statistics(filters):
             hospital_result = pd.read_sql_query(hospital_query, conn)
             if not hospital_result.empty and hospital_result.iloc[0]['total_er']:
                 total_cases += int(hospital_result.iloc[0]['total_er'])
+
+        # Calculate Foodborne cases if selected
+        if 'Foodborne' in illness_types:
+            foodborne_query = """
+                SELECT COUNT(*) as total_foodborne
+                FROM restaurant_inspection_data
+                WHERE is_high_risk_foodborne = 1
+            """
+
+            if date_filter:
+                foodborne_query += f" AND date >= '{date_filter[0]}' AND date <= '{date_filter[1]}'"
+            if borough:
+                foodborne_query += f" AND borough = '{borough}'"
+            if zip_code:
+                foodborne_query += f" AND zip_code = '{zip_code}'"
+
+            foodborne_result = pd.read_sql_query(foodborne_query, conn)
+            if not foodborne_result.empty and foodborne_result.iloc[0]['total_foodborne']:
+                total_cases += int(foodborne_result.iloc[0]['total_foodborne'])
 
         # Count active alerts (patterns detected recently)
         alert_query = """
@@ -1132,6 +1184,40 @@ def get_filtered_table_data(filters):
                     'color': '#DDA0DD'
                 })
 
+        # Get Foodborne data if selected
+        if 'Foodborne' in illness_types:
+            foodborne_query = """
+                SELECT date, borough, zip_code, restaurant_name,
+                       is_high_risk_foodborne, foodborne_risk_level, grade
+                FROM restaurant_inspection_data
+                WHERE 1=1
+            """
+
+            if date_filter:
+                foodborne_query += f" AND date >= '{date_filter[0]}' AND date <= '{date_filter[1]}'"
+            if borough:
+                foodborne_query += f" AND borough = '{borough}'"
+            if zip_code:
+                foodborne_query += f" AND zip_code = '{zip_code}'"
+
+            foodborne_query += " ORDER BY date DESC LIMIT 20"
+
+            foodborne_result = pd.read_sql_query(foodborne_query, conn)
+
+            for _, row in foodborne_result.iterrows():
+                risk_level = row['foodborne_risk_level'] if row['foodborne_risk_level'] else 'LOW'
+                risk_indicator = '🔴 HIGH RISK' if row['is_high_risk_foodborne'] else '🟡 MEDIUM' if risk_level == 'MEDIUM' else '🟢 LOW'
+
+                table_data.append({
+                    'id': f"restaurant_{row['zip_code']}_{row['date']}_{hash(row['restaurant_name']) % 10000}",
+                    'date': row['date'],
+                    'location': f"{row['borough']} ({row['zip_code']})",
+                    'illness_type': 'Foodborne',
+                    'value': f"{row['restaurant_name'][:30]}... (Grade: {row['grade'] or 'N/A'})",
+                    'risk_level': risk_level,
+                    'color': '#45B7D1'
+                })
+
         conn.close()
 
         # Sort by date descending
@@ -1244,6 +1330,20 @@ def get_illness_distribution(conn, filters):
                 result = pd.read_sql_query(query, conn)
                 value = int(result.iloc[0]['total']) if not result.empty and result.iloc[0]['total'] else 0
                 labels.append('Hospital ER')
+                values.append(value)
+
+            elif illness == 'Foodborne':
+                query = "SELECT COUNT(*) as total FROM restaurant_inspection_data WHERE is_high_risk_foodborne = 1"
+                if date_filter:
+                    query += f" AND date >= '{date_filter[0]}' AND date <= '{date_filter[1]}'"
+                if borough:
+                    query += f" AND borough = '{borough}'"
+                if zip_code:
+                    query += f" AND zip_code = '{zip_code}'"
+
+                result = pd.read_sql_query(query, conn)
+                value = int(result.iloc[0]['total']) if not result.empty and result.iloc[0]['total'] else 0
+                labels.append('Foodborne')
                 values.append(value)
 
         return {'labels': labels, 'values': values}
