@@ -43,13 +43,16 @@ def advanced_dashboard():
         
         # Get last updated date
         last_updated = pd.read_sql_query("SELECT MAX(date_of_interest) as latest FROM nyc_covid_data", conn).iloc[0]['latest']
-        
+
+        # Count available data sources
+        available_data_sources = ['COVID-19', 'Flu', 'Foodborne', 'Air Quality', 'Hospital ER', 'Tick Disease']
+
         conn.close()
-        
+
         return render_template('advanced_dashboard.html',
                              total_cases=f"{total_cases:,}",
                              active_alerts=active_alerts,
-                             data_sources=7,
+                             data_sources=len(available_data_sources),
                              last_updated=last_updated)
     
     except Exception as e:
@@ -624,10 +627,13 @@ def get_filtered_statistics(filters):
 
         conn.close()
 
+        # Count total available data sources (not just filtered ones)
+        available_data_sources = ['COVID-19', 'Flu', 'Foodborne', 'Air Quality', 'Hospital ER', 'Tick Disease']
+
         return {
             'total_cases': f"{total_cases:,}",
             'active_alerts': active_alerts,
-            'data_sources': len(illness_types),
+            'data_sources': len(available_data_sources),
             'last_updated': datetime.now().strftime('%Y-%m-%d')
         }
 
@@ -1235,36 +1241,43 @@ def get_health_alerts(filters):
     try:
         conn = sqlite3.connect('public_health_data.db')
 
+        illness_types = filters.get('illnessTypes', [])
         borough = filters.get('borough', '')
         zip_code = filters.get('zipCode', '')
 
-        # Get recent pattern detections as alerts
-        alert_query = """
-            SELECT id, date, zip_code, hospital_name, pattern_type,
-                   current_value, percentage_change, confidence_level, ai_explanation
-            FROM pattern_detections
-            WHERE detection_timestamp >= datetime('now', '-7 days')
-            AND confidence_level IN ('HIGH', 'MEDIUM')
-        """
-
-        if borough:
-            alert_query += f" AND (hospital_name LIKE '%{borough}%' OR zip_code IN (SELECT zip_code FROM real_hospital_data WHERE borough = '{borough}'))"
-        if zip_code:
-            alert_query += f" AND zip_code = '{zip_code}'"
-
-        alert_query += " ORDER BY detection_timestamp DESC LIMIT 10"
-
-        alert_result = pd.read_sql_query(alert_query, conn)
-
         alerts = []
-        for _, row in alert_result.iterrows():
-            alerts.append({
-                'id': row['id'],
-                'title': f"{row['pattern_type']} Alert - {row['hospital_name']}",
-                'description': f"ZIP {row['zip_code']}: {row['current_value']} visits ({row['percentage_change']:+.1f}% change)",
-                'risk_level': row['confidence_level'],
-                'date': row['date']
-            })
+
+        # Only show hospital/ER alerts if "Hospital ER" is selected
+        if 'Hospital ER' in illness_types:
+            # Get recent pattern detections as alerts
+            alert_query = """
+                SELECT id, date, zip_code, hospital_name, pattern_type,
+                       current_value, percentage_change, confidence_level, ai_explanation
+                FROM pattern_detections
+                WHERE detection_timestamp >= datetime('now', '-7 days')
+                AND confidence_level IN ('HIGH', 'MEDIUM')
+            """
+
+            if borough:
+                alert_query += f" AND (hospital_name LIKE '%{borough}%' OR zip_code IN (SELECT zip_code FROM real_hospital_data WHERE borough = '{borough}'))"
+            if zip_code:
+                alert_query += f" AND zip_code = '{zip_code}'"
+
+            alert_query += " ORDER BY detection_timestamp DESC LIMIT 10"
+
+            alert_result = pd.read_sql_query(alert_query, conn)
+
+            for _, row in alert_result.iterrows():
+                alerts.append({
+                    'id': row['id'],
+                    'title': f"{row['pattern_type']} Alert - {row['hospital_name']}",
+                    'description': f"ZIP {row['zip_code']}: {row['current_value']} visits ({row['percentage_change']:+.1f}% change)",
+                    'risk_level': row['confidence_level'],
+                    'date': row['date']
+                })
+
+        # For other illness types, we could add specific alert logic here in the future
+        # For now, only hospital alerts are available in the pattern_detections table
 
         conn.close()
         return alerts
