@@ -88,12 +88,13 @@ class DashboardManager:
             print(f"✅ Latest data: {latest_data}")
 
             print("📊 Getting recent patterns...")
-            # Get recent patterns (last 7 days)
+            # Get recent patterns (last 30 days to ensure we have data for the chart)
             recent_patterns = pd.read_sql_query("""
                 SELECT pattern_type, COUNT(*) as count
                 FROM pattern_detections
-                WHERE date >= date('now', '-7 days')
+                WHERE date >= date('now', '-30 days')
                 GROUP BY pattern_type
+                ORDER BY count DESC
             """, conn)
             print(f"✅ Recent patterns shape: {recent_patterns.shape}")
 
