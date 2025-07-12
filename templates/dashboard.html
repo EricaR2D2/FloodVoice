@@ -357,20 +357,50 @@ function initializeCharts() {
 
 function updateCharts() {
     const days = document.getElementById('timeRangeSelect').value;
-    
+
     fetch(`/api/hospital-data?days=${days}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Hospital chart data received:', data);
+
+            // Check if hospitalChart exists
+            if (!hospitalChart) {
+                console.error('Hospital chart not initialized');
+                return;
+            }
+
+            // Check if data has the expected structure
+            if (!data.daily_totals || !Array.isArray(data.daily_totals)) {
+                console.error('Invalid data structure:', data);
+                return;
+            }
+
+            if (data.daily_totals.length === 0) {
+                console.warn('No hospital data available for chart');
+                return;
+            }
+
             // Update hospital data chart
             const labels = data.daily_totals.map(item => formatDate(item.date));
             const values = data.daily_totals.map(item => item.er_visits_respiratory);
-            
+
+            console.log('Chart labels:', labels);
+            console.log('Chart values:', values);
+
             hospitalChart.data.labels = labels;
             hospitalChart.data.datasets[0].data = values;
             hospitalChart.update();
+
+            console.log('Hospital chart updated successfully');
         })
         .catch(error => {
             console.error('Error updating hospital chart:', error);
+            showNotification(`Error loading hospital chart: ${error.message}`, 'danger');
         });
     
     // Update pattern chart
