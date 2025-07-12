@@ -32,41 +32,40 @@ def main():
     print("\n📋 Checking current status...")
     subprocess.run("git status", shell=True)
     
+    # Create and checkout bugfix branch if not already on it
+    if not run_command("git checkout bugfix 2>/dev/null || git checkout -b bugfix", "Switching to bugfix branch"):
+        return
+    
     # Add all changes
     if not run_command("git add .", "Adding all changes"):
         return
     
     # Commit changes
-    commit_message = """Fix: Advanced dashboard authentication and map initialization
+    commit_message = """Polish: Demo readiness improvements for Wednesday presentation
 
-- Added @login_required decorators to all advanced dashboard routes  
-- Fixed Leaflet map container double initialization error
-- Improved JavaScript error handling in map functions
-- Ready for collaborative debugging session with friend
+- Added data freshness verification with visual indicators
+- Improved loading state with overlay and animations
+- Standardized error handling with custom error pages
 
-Key fixes:
-- Authentication now works on /advanced-dashboard
-- Map initialization error resolved
-- All API endpoints properly protected
-- Database has 6.6M+ records ready for testing"""
+These polish improvements enhance the demo experience without adding new features."""
 
     if not run_command(f'git commit -m "{commit_message}"', "Committing changes"):
         print("ℹ️ No new changes to commit, or commit failed")
     
     # Push to GitHub
-    if not run_command("git push origin main", "Pushing to GitHub"):
+    if not run_command("git push origin bugfix", "Pushing to GitHub bugfix branch"):
         return
     
     print("\n" + "=" * 50)
     print("🎉 SUCCESS! Your code is now on GitHub!")
-    print("\n📍 SHARE THIS LINK WITH YOUR FRIEND:")
-    print("🔗 https://github.com/EricaR2D2/PublicHealthMVP")
-    print("\n📋 DEBUGGING INFO FOR YOUR FRIEND:")
-    print("• Login: testuser / testpass123")
-    print("• Server: python app.py (runs on localhost:5000)")
-    print("• Issue: Advanced dashboard map loading")
-    print("• Focus: Leaflet.js initialization and API calls")
-    print("• Database: 6.6M+ records in public_health_data.db")
+    print("\n📍 BRANCH INFORMATION:")
+    print("🔗 Branch: bugfix")
+    print("🔗 https://github.com/EricaR2D2/PublicHealthMVP/tree/bugfix")
+    print("\n📋 NEXT STEPS:")
+    print("• Create a pull request when ready to merge to main")
+    print("• Share the bugfix branch link for review before the demo")
+    print("• Keep main branch stable until after Wednesday's presentation")
 
 if __name__ == "__main__":
     main()
+

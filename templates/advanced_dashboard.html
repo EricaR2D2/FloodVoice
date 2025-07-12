@@ -178,54 +178,38 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.85);
-            display: none;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
             justify-content: center;
             align-items: center;
             z-index: 9999;
-            backdrop-filter: blur(3px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
         }
-
-        .loading-content {
-            text-align: center;
-            background-color: rgba(255, 255, 255, 0.1);
-            padding: 30px;
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            color: white;
+        
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
-
-        .spinner {
-            border: 4px solid rgba(255,255,255,0.3);
+        
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            border-top: 4px solid #4CAF50;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px auto;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
         }
-
-        .loading-text {
-            font-size: 1.1rem;
-            font-weight: 500;
-            margin-bottom: 10px;
-        }
-
-        .loading-subtext {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
+        
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 0.4; }
+        
+        .loading-text {
+            color: white;
+            margin-top: 15px;
+            font-size: 16px;
         }
         
         .alert-panel {
@@ -270,9 +254,8 @@
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-content">
-            <div class="spinner"></div>
-            <div class="loading-text">Processing Filters</div>
-            <div class="loading-subtext">Loading health data and updating visualizations...</div>
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading health data...</div>
         </div>
     </div>
 
@@ -1398,21 +1381,18 @@
         }
 
         // Utility functions
-        function showLoading(text = 'Processing Filters', subtext = 'Loading health data and updating visualizations...') {
+        function showLoading(message = 'Loading health data...') {
             const overlay = document.getElementById('loadingOverlay');
-            const loadingText = overlay.querySelector('.loading-text');
-            const loadingSubtext = overlay.querySelector('.loading-subtext');
-
-            if (loadingText) loadingText.textContent = text;
-            if (loadingSubtext) loadingSubtext.textContent = subtext;
-
-            overlay.style.display = 'flex';
+            const textElement = overlay.querySelector('.loading-text');
+            textElement.textContent = message;
+            overlay.classList.add('active');
         }
-
+        
         function hideLoading() {
-            document.getElementById('loadingOverlay').style.display = 'none';
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.remove('active');
         }
-
+        
         function updateLoadingText(text, subtext) {
             const overlay = document.getElementById('loadingOverlay');
             const loadingText = overlay.querySelector('.loading-text');
@@ -1538,3 +1518,5 @@
     </script>
 </body>
 </html>
+
+

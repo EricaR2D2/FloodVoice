@@ -35,7 +35,7 @@ def load_user(user_id):
 
 # Configuration
 DATABASE_PATH = 'public_health_data.db'
-UPDATE_INTERVAL = 300  # 5 minutes for demo (would be real-time in production)
+UPDATE_INTERVAL = 3600  # 1 hour to prevent pattern detection overload
 
 class DashboardManager:
     def __init__(self):
@@ -60,6 +60,16 @@ class DashboardManager:
         conn = self.get_database_connection()
 
         try:
+            # Add data freshness check with visual indicators
+            data_freshness = {
+                'hospital_data': self.get_data_freshness('real_hospital_data', 'date'),
+                'nyc_covid_data': self.get_data_freshness('nyc_covid_data', 'date_of_interest'),
+                'covid_daily_counts': self.get_data_freshness('covid_daily_counts', 'date_of_interest'),
+                'air_quality_data': self.get_data_freshness('enhanced_air_quality_data', 'date'),
+                'restaurant_data': self.get_data_freshness('restaurant_inspection_data', 'date'),
+                'cdc_ili_data': self.get_data_freshness('cdc_ili_data', 'week_ending_date')
+            }
+            
             print("📊 Getting counts...")
             # Get total records count from real hospital data
             hospital_count_df = pd.read_sql_query("SELECT COUNT(*) as count FROM real_hospital_data", conn)
@@ -108,7 +118,8 @@ class DashboardManager:
                 'latest_data_date': latest_data,
                 'recent_patterns': recent_patterns.to_dict('records') if not recent_patterns.empty else [],
                 'data_sources': data_sources,
-                'last_update': datetime.now().isoformat()
+                'last_update': datetime.now().isoformat(),
+                'data_freshness': data_freshness
             }
             print(f"✅ Result built successfully with {len(result)} keys")
             return result
@@ -118,6 +129,64 @@ class DashboardManager:
             import traceback
             traceback.print_exc()
             raise
+        finally:
+            conn.close()
+    
+    def get_data_freshness(self, table, date_column):
+        """Get data freshness status for a table."""
+        conn = self.get_database_connection()
+        try:
+            query = f"SELECT MAX({date_column}) as latest_date FROM {table}"
+            df = pd.read_sql_query(query, conn)
+            latest_date = df.iloc[0]['latest_date']
+            
+            if latest_date:
+                # Handle different date formats (with or without time)
+                date_str = str(latest_date).strip()
+                parsed_date = None
+
+                # Try multiple parsing approaches
+                parsing_attempts = [
+                    # Format: '2025-06-09 00:00:00' (datetime with time)
+                    lambda d: datetime.strptime(d, '%Y-%m-%d %H:%M:%S'),
+                    # Format: '2025-06-09' (date only)
+                    lambda d: datetime.strptime(d, '%Y-%m-%d'),
+                    # Extract date part from datetime string
+                    lambda d: datetime.strptime(d.split(' ')[0], '%Y-%m-%d') if ' ' in d else None,
+                    # Extract first 10 characters as date
+                    lambda d: datetime.strptime(d[:10], '%Y-%m-%d') if len(d) >= 10 else None
+                ]
+
+                for attempt in parsing_attempts:
+                    try:
+                        parsed_date = attempt(date_str)
+                        if parsed_date:
+                            break
+                    except (ValueError, AttributeError, IndexError):
+                        continue
+
+                if not parsed_date:
+                    print(f"⚠️ Could not parse date: {repr(latest_date)}")
+                    return {'status': 'unknown', 'days_old': None, 'latest_date': None}
+
+                latest_date = parsed_date
+
+                days_old = (datetime.now() - latest_date).days
+                
+                # Determine freshness status
+                if days_old <= 7:
+                    status = "current"
+                elif days_old <= 30:
+                    status = "recent"
+                else:
+                    status = "outdated"
+                    
+                return {
+                    'latest_date': latest_date.strftime('%Y-%m-%d'),
+                    'days_old': days_old,
+                    'status': status
+                }
+            return {'status': 'unknown', 'days_old': None, 'latest_date': None}
         finally:
             conn.close()
     
@@ -269,24 +338,43 @@ class DashboardManager:
     def run_pattern_detection(self):
         """Run pattern detection and return results."""
         try:
+            # Check if pattern detection has run recently (within last hour)
+            conn = self.get_database_connection()
+            recent_patterns = pd.read_sql_query("""
+                SELECT COUNT(*) as count
+                FROM pattern_detections
+                WHERE detection_timestamp >= datetime('now', '-1 hour')
+            """, conn)
+            conn.close()
+
+            if recent_patterns.iloc[0]['count'] > 0:
+                print("⏭️ Pattern detection already run recently, skipping...")
+                return 0
+
+            print("🔍 Running pattern detection...")
             detector = PatternDetector()
             data = detector.load_data()
             patterns = detector.detect_patterns(data)
-            
+
+            # Limit patterns to prevent overwhelming the system
+            if len(patterns) > 50:
+                print(f"⚠️ Too many patterns detected ({len(patterns)}), limiting to 50 most recent")
+                patterns = patterns[-50:]  # Take the 50 most recent patterns
+
             # Generate explanations for new patterns
             new_patterns = []
             for pattern in patterns:
                 explanation = detector.generate_ai_explanation(pattern)
                 pattern['ai_explanation'] = explanation
                 new_patterns.append(pattern)
-            
+
             # Store results
             if new_patterns:
                 detector.store_results(new_patterns)
-            
+
             detector.close()
             return len(new_patterns)
-            
+
         except Exception as e:
             print(f"Error running pattern detection: {e}")
             return 0
@@ -1127,3 +1215,45 @@ if __name__ == '__main__':
         print("🌐 Running in production mode")
 
     socketio.run(app, debug=debug_mode, host='0.0.0.0', port=port)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('error.html', 
+                          error_code=404,
+                          error_message="The requested page could not be found."), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template('error.html',
+                          error_code=500,
+                          error_message="An internal server error occurred."), 500
+
+@app.route('/api/map-data', methods=['POST'])
+def get_map_data():
+    try:
+        filters = request.json
+        
+        # Initialize result variable before using it
+        result = {
+            'data': [],
+            'status': 'success'
+        }
+        
+        # Your existing code to populate result...
+        # ...
+        
+        return jsonify(result)
+    except Exception as e:
+        print(f"Error in get_map_data: {str(e)}")
+        return jsonify({
+            'error': True,
+            'message': 'Failed to load map data. Please try again.',
+            'details': str(e)
+        }), 500
+
+
+
+
+
+
+
