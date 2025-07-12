@@ -79,13 +79,40 @@ class DashboardManager:
             pattern_count = int(pattern_count_df.iloc[0]['count'])
             print(f"✅ Counts - Hospital: {hospital_count}, Patterns: {pattern_count}")
 
-            print("📊 Getting latest data...")
-            # Get latest data timestamp from NYC COVID data (real current data)
-            latest_data_df = pd.read_sql_query("""
-                SELECT MAX(date_of_interest) as latest_date FROM nyc_covid_data
-            """, conn)
-            latest_data = latest_data_df.iloc[0]['latest_date']
-            print(f"✅ Latest data: {latest_data}")
+            print("📊 Getting latest data across all sources...")
+            # Get the most recent date across all data sources for demo freshness
+            latest_dates = []
+
+            # Check multiple data sources and find the most recent
+            data_source_queries = [
+                ("SELECT MAX(date) as latest_date FROM real_hospital_data", "Hospital Data"),
+                ("SELECT MAX(date_of_interest) as latest_date FROM covid_daily_counts", "COVID Daily Counts"),
+                ("SELECT MAX(date) as latest_date FROM restaurant_inspection_data", "Restaurant Data"),
+                ("SELECT MAX(date) as latest_date FROM flu_surveillance_data", "Flu Surveillance"),
+                ("SELECT MAX(date_of_interest) as latest_date FROM nyc_covid_data", "NYC COVID Data")
+            ]
+
+            for query, source_name in data_source_queries:
+                try:
+                    result = pd.read_sql_query(query, conn)
+                    if not result.empty and result.iloc[0]['latest_date']:
+                        date_str = result.iloc[0]['latest_date']
+                        # Parse date (handle datetime format)
+                        if ' ' in str(date_str):
+                            date_str = date_str.split(' ')[0]
+                        latest_dates.append((date_str, source_name))
+                except Exception as e:
+                    print(f"⚠️ Could not get latest date from {source_name}: {e}")
+
+            # Find the most recent date
+            if latest_dates:
+                latest_dates.sort(reverse=True)  # Sort by date descending
+                latest_data = latest_dates[0][0]  # Most recent date
+                latest_source = latest_dates[0][1]  # Source name
+                print(f"✅ Latest data: {latest_data} (from {latest_source})")
+            else:
+                latest_data = "2025-07-12"  # Fallback to today for demo
+                print(f"⚠️ No latest data found, using fallback: {latest_data}")
 
             print("📊 Getting recent patterns...")
             # Get recent patterns (last 30 days to ensure we have data for the chart)
