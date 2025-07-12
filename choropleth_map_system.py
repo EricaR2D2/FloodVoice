@@ -484,17 +484,21 @@ class ChoroplethMapSystem:
                 ),
                 tooltip=folium.GeoJsonTooltip(
                     fields=['MODZCTA'],
-                    aliases=['ZIP Code:'],
+                    aliases=[f'{illness_type} - ZIP Code:'],
                     localize=True,
                     sticky=True,
                     labels=True,
                     style="""
-                        background-color: rgba(0,0,0,0.8);
+                        background-color: rgba(0,0,0,0.9);
                         border: 2px solid white;
-                        border-radius: 3px;
+                        border-radius: 8px;
                         color: white;
+                        padding: 10px;
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        font-size: 12px;
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
                     """,
-                    max_width=200,
+                    max_width=250,
                 )
             )
             
@@ -505,45 +509,72 @@ class ChoroplethMapSystem:
     
     def add_custom_popups(self, map_obj, boundaries, data_dict, illness_type):
         """Add custom popups with detailed health information"""
-        
+
         for feature in boundaries['features']:
             zip_code = self.extract_zip_code(feature)
             value = data_dict.get(str(zip_code), 0)
-            
-            if value > 0:
+
+            # Get additional data for this ZIP code
+            additional_data = self.get_zip_code_details(zip_code, illness_type)
+
+            if value > 0 or additional_data:  # Show popup even if current illness has no data but other data exists
                 # Calculate centroid of ZIP code for popup placement
                 coords = feature['geometry']['coordinates']
                 if feature['geometry']['type'] == 'Polygon':
                     coords = coords[0]
                 elif feature['geometry']['type'] == 'MultiPolygon':
                     coords = coords[0][0]
-                
+
                 # Simple centroid calculation
                 lats = [coord[1] for coord in coords]
                 lons = [coord[0] for coord in coords]
                 center_lat = sum(lats) / len(lats)
                 center_lon = sum(lons) / len(lons)
-                
-                # Create popup content
+
+                # Determine risk level based on value
+                risk_level = self.determine_risk_level(value, illness_type)
+                risk_color = self.get_risk_color(risk_level)
+
+                # Create comprehensive popup content
                 popup_html = f"""
-                <div style="width: 250px; background-color: rgba(255,255,255,0.95); color: #2C3E50; padding: 15px; border-radius: 8px; border: 2px solid {self.illness_colors[illness_type][4]}; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                    <h5 style="color: {self.illness_colors[illness_type][5]}; margin-top: 0; font-weight: bold;">
+                <div style="width: 320px; background-color: rgba(255,255,255,0.98); color: #2C3E50; padding: 18px; border-radius: 10px; border: 3px solid {self.illness_colors[illness_type][4]}; box-shadow: 0 6px 12px rgba(0,0,0,0.15); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                    <h4 style="color: {self.illness_colors[illness_type][5]}; margin-top: 0; margin-bottom: 15px; font-weight: bold; border-bottom: 2px solid {self.illness_colors[illness_type][4]}; padding-bottom: 8px;">
                         <i class="fas fa-map-marker-alt"></i> ZIP Code {zip_code}
-                    </h5>
-                    <p style="margin: 8px 0; font-weight: 600;"><strong>{illness_type} Data:</strong></p>
-                    <p style="font-size: 1.3em; color: {self.illness_colors[illness_type][6]}; font-weight: bold; margin: 10px 0;">
-                        {value:.1f}
-                    </p>
-                    <p style="font-size: 0.9em; color: #7F8C8D; margin-bottom: 0;">
-                        <i class="fas fa-info-circle"></i> Click for detailed analysis
+                    </h4>
+
+                    <div style="margin-bottom: 12px;">
+                        <p style="margin: 4px 0; font-weight: 600;"><i class="fas fa-building"></i> <strong>Borough:</strong> {additional_data.get('borough', 'Unknown')}</p>
+                        <p style="margin: 4px 0; font-weight: 600;"><i class="fas fa-calendar"></i> <strong>Last Updated:</strong> {additional_data.get('last_updated', 'N/A')}</p>
+                    </div>
+
+                    <div style="background-color: rgba(52, 152, 219, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+                        <p style="margin: 4px 0; font-weight: 600; color: {self.illness_colors[illness_type][5]};"><strong>{illness_type} Data:</strong></p>
+                        <p style="font-size: 1.4em; color: {self.illness_colors[illness_type][6]}; font-weight: bold; margin: 8px 0;">
+                            {value:.1f} {self.get_unit_label(illness_type)}
+                        </p>
+                        <p style="margin: 4px 0; font-size: 0.9em;">
+                            <span style="background-color: {risk_color}; color: white; padding: 2px 8px; border-radius: 12px; font-weight: bold;">
+                                {risk_level} RISK
+                            </span>
+                        </p>
+                    </div>
+
+                    <div style="background-color: rgba(236, 240, 241, 0.8); padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+                        <p style="margin: 3px 0; font-size: 0.9em;"><strong>Total Cases Reported:</strong> {additional_data.get('total_cases', 'N/A')}</p>
+                        <p style="margin: 3px 0; font-size: 0.9em;"><strong>Population Density:</strong> {additional_data.get('population_density', 'N/A')}</p>
+                        <p style="margin: 3px 0; font-size: 0.9em;"><strong>Active Alerts:</strong> {additional_data.get('active_alerts', 0)}</p>
+                    </div>
+
+                    <p style="font-size: 0.85em; color: #7F8C8D; margin-bottom: 0; text-align: center; font-style: italic;">
+                        <i class="fas fa-info-circle"></i> Click for detailed analysis and trends
                     </p>
                 </div>
                 """
-                
+
                 # Add invisible marker for popup
                 folium.Marker(
                     location=[center_lat, center_lon],
-                    popup=folium.Popup(popup_html, max_width=300),
+                    popup=folium.Popup(popup_html, max_width=350),
                     icon=folium.Icon(color='blue', icon='info-sign', prefix='fa'),
                     opacity=0  # Make marker invisible
                 ).add_to(map_obj)
@@ -722,12 +753,21 @@ class ChoroplethMapSystem:
                 ),
                 tooltip=folium.GeoJsonTooltip(
                     fields=['MODZCTA'],
-                    aliases=[f'{illness_type} - ZIP:'],
+                    aliases=[f'{illness_type} - ZIP Code:'],
                     localize=True,
                     sticky=True,
                     labels=True,
-                    style="background-color: rgba(0,0,0,0.8); color: white; border-radius: 3px;",
-                    max_width=200,
+                    style="""
+                        background-color: rgba(0,0,0,0.9);
+                        color: white;
+                        border-radius: 8px;
+                        padding: 10px;
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        font-size: 12px;
+                        border: 2px solid white;
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                    """,
+                    max_width=250,
                 )
             ).add_to(feature_group)
 
@@ -789,6 +829,266 @@ class ChoroplethMapSystem:
             }
 
         return None
+
+    def get_zip_code_details(self, zip_code, illness_type):
+        """Get additional details for a ZIP code from the database"""
+
+        try:
+            conn = sqlite3.connect(self.db_path)
+
+            # Get borough information using ZIP code mapping
+            borough = self.get_borough_from_zip(zip_code)
+
+            # Get illness-specific data and last updated date
+            total_cases = 0
+            last_updated = 'N/A'
+
+            if illness_type == 'COVID-19':
+                # Get COVID data for this borough
+                borough_col_map = {
+                    'Bronx': 'BX_CASE_COUNT',
+                    'Brooklyn': 'BK_CASE_COUNT',
+                    'Manhattan': 'MN_CASE_COUNT',
+                    'Queens': 'QN_CASE_COUNT',
+                    'Staten Island': 'SI_CASE_COUNT'
+                }
+
+                if borough in borough_col_map:
+                    covid_query = f"""
+                        SELECT SUM({borough_col_map[borough]}) as total,
+                               MAX(date_of_interest) as latest
+                        FROM nyc_covid_data
+                        WHERE {borough_col_map[borough]} IS NOT NULL
+                    """
+                    covid_result = pd.read_sql_query(covid_query, conn)
+                    if not covid_result.empty:
+                        total_cases = int(covid_result.iloc[0]['total'] or 0)
+                        last_updated = covid_result.iloc[0]['latest'] or 'N/A'
+
+            elif illness_type == 'Hospital ER':
+                # Get hospital data for this ZIP code
+                hospital_query = """
+                    SELECT SUM(total_visits) as total, MAX(date) as latest
+                    FROM real_hospital_data
+                    WHERE zip_code = ? AND total_visits IS NOT NULL
+                """
+                hospital_result = pd.read_sql_query(hospital_query, conn, params=[zip_code])
+                if not hospital_result.empty:
+                    total_cases = int(hospital_result.iloc[0]['total'] or 0)
+                    last_updated = hospital_result.iloc[0]['latest'] or 'N/A'
+
+            elif illness_type == 'Flu':
+                # Get flu data for this ZIP code
+                flu_query = """
+                    SELECT SUM(flu_like_visits) as total, MAX(date) as latest
+                    FROM flu_surveillance_data
+                    WHERE zip_code = ? AND flu_like_visits IS NOT NULL
+                """
+                flu_result = pd.read_sql_query(flu_query, conn, params=[zip_code])
+                if not flu_result.empty:
+                    total_cases = int(flu_result.iloc[0]['total'] or 0)
+                    last_updated = flu_result.iloc[0]['latest'] or 'N/A'
+
+            elif illness_type == 'Foodborne':
+                # Get foodborne data for this ZIP code
+                foodborne_query = """
+                    SELECT COUNT(*) as total, MAX(date) as latest
+                    FROM restaurant_inspection_data
+                    WHERE zip_code = ? AND is_high_risk_foodborne = 1
+                """
+                foodborne_result = pd.read_sql_query(foodborne_query, conn, params=[zip_code])
+                if not foodborne_result.empty:
+                    total_cases = int(foodborne_result.iloc[0]['total'] or 0)
+                    last_updated = foodborne_result.iloc[0]['latest'] or 'N/A'
+
+            elif illness_type == 'Tick Disease':
+                # Get tick disease data for this ZIP code
+                tick_query = """
+                    SELECT SUM(case_count) as total, MAX(date) as latest
+                    FROM tick_disease_data
+                    WHERE zip_code = ? AND case_count IS NOT NULL
+                """
+                tick_result = pd.read_sql_query(tick_query, conn, params=[zip_code])
+                if not tick_result.empty:
+                    total_cases = int(tick_result.iloc[0]['total'] or 0)
+                    last_updated = tick_result.iloc[0]['latest'] or 'N/A'
+
+            elif illness_type == 'Air Quality':
+                # Get air quality data for this borough
+                air_query = """
+                    SELECT AVG(air_quality_score) as avg_score, MAX(data_date) as latest
+                    FROM air_quality_summary
+                    WHERE borough = ? AND air_quality_score IS NOT NULL
+                """
+                air_result = pd.read_sql_query(air_query, conn, params=[borough])
+                if not air_result.empty:
+                    total_cases = int(air_result.iloc[0]['avg_score'] or 0)
+                    last_updated = air_result.iloc[0]['latest'] or 'N/A'
+
+            # Get active alerts for this ZIP code
+            alerts_query = """
+                SELECT COUNT(*) as count FROM pattern_detections
+                WHERE zip_code = ? AND detection_timestamp >= datetime('now', '-7 days')
+            """
+            alerts_result = pd.read_sql_query(alerts_query, conn, params=[zip_code])
+            active_alerts = int(alerts_result.iloc[0]['count']) if not alerts_result.empty else 0
+
+            # Get population density estimate based on borough
+            population_density = self.get_population_density(borough)
+
+            conn.close()
+
+            return {
+                'borough': borough,
+                'total_cases': f"{total_cases:,}" if total_cases > 0 else '0',
+                'population_density': population_density,
+                'active_alerts': active_alerts,
+                'last_updated': last_updated
+            }
+
+        except Exception as e:
+            print(f"Error getting ZIP code details for {zip_code}: {e}")
+            return {
+                'borough': self.get_borough_from_zip(zip_code),
+                'total_cases': '0',
+                'population_density': 'Medium',
+                'active_alerts': 0,
+                'last_updated': 'N/A'
+            }
+
+    def determine_risk_level(self, value, illness_type):
+        """Determine risk level based on value and illness type"""
+
+        if value == 0:
+            return 'LOW'
+
+        # Define thresholds based on illness type
+        thresholds = {
+            'COVID-19': {'low': 10, 'medium': 50, 'high': 100},
+            'Flu': {'low': 5, 'medium': 20, 'high': 50},
+            'Foodborne': {'low': 2, 'medium': 10, 'high': 25},
+            'Air Quality': {'low': 50, 'medium': 100, 'high': 150},
+            'Hospital ER': {'low': 20, 'medium': 100, 'high': 200},
+            'Tick Disease': {'low': 1, 'medium': 5, 'high': 15}
+        }
+
+        illness_thresholds = thresholds.get(illness_type, {'low': 10, 'medium': 50, 'high': 100})
+
+        if value <= illness_thresholds['low']:
+            return 'LOW'
+        elif value <= illness_thresholds['medium']:
+            return 'MEDIUM'
+        elif value <= illness_thresholds['high']:
+            return 'HIGH'
+        else:
+            return 'CRITICAL'
+
+    def get_risk_color(self, risk_level):
+        """Get color for risk level"""
+
+        colors = {
+            'LOW': '#27AE60',      # Green
+            'MEDIUM': '#F39C12',   # Orange
+            'HIGH': '#E74C3C',     # Red
+            'CRITICAL': '#8E44AD'  # Purple
+        }
+
+        return colors.get(risk_level, '#95A5A6')  # Default gray
+
+    def get_unit_label(self, illness_type):
+        """Get appropriate unit label for illness type"""
+
+        units = {
+            'COVID-19': 'cases',
+            'Flu': 'visits',
+            'Foodborne': 'incidents',
+            'Air Quality': 'AQI',
+            'Hospital ER': 'visits',
+            'Tick Disease': 'cases'
+        }
+
+        return units.get(illness_type, 'cases')
+
+    def get_borough_from_zip(self, zip_code):
+        """Get borough name from ZIP code using NYC ZIP code mapping"""
+
+        # NYC ZIP code to borough mapping (major ZIP codes)
+        zip_to_borough = {
+            # Manhattan
+            '10001': 'Manhattan', '10002': 'Manhattan', '10003': 'Manhattan', '10004': 'Manhattan',
+            '10005': 'Manhattan', '10006': 'Manhattan', '10007': 'Manhattan', '10009': 'Manhattan',
+            '10010': 'Manhattan', '10011': 'Manhattan', '10012': 'Manhattan', '10013': 'Manhattan',
+            '10014': 'Manhattan', '10016': 'Manhattan', '10017': 'Manhattan', '10018': 'Manhattan',
+            '10019': 'Manhattan', '10020': 'Manhattan', '10021': 'Manhattan', '10022': 'Manhattan',
+            '10023': 'Manhattan', '10024': 'Manhattan', '10025': 'Manhattan', '10026': 'Manhattan',
+            '10027': 'Manhattan', '10028': 'Manhattan', '10029': 'Manhattan', '10030': 'Manhattan',
+            '10031': 'Manhattan', '10032': 'Manhattan', '10033': 'Manhattan', '10034': 'Manhattan',
+            '10035': 'Manhattan', '10036': 'Manhattan', '10037': 'Manhattan', '10038': 'Manhattan',
+            '10039': 'Manhattan', '10040': 'Manhattan', '10044': 'Manhattan', '10065': 'Manhattan',
+            '10075': 'Manhattan', '10128': 'Manhattan', '10280': 'Manhattan', '10282': 'Manhattan',
+
+            # Bronx
+            '10451': 'Bronx', '10452': 'Bronx', '10453': 'Bronx', '10454': 'Bronx',
+            '10455': 'Bronx', '10456': 'Bronx', '10457': 'Bronx', '10458': 'Bronx',
+            '10459': 'Bronx', '10460': 'Bronx', '10461': 'Bronx', '10462': 'Bronx',
+            '10463': 'Bronx', '10464': 'Bronx', '10465': 'Bronx', '10466': 'Bronx',
+            '10467': 'Bronx', '10468': 'Bronx', '10469': 'Bronx', '10470': 'Bronx',
+            '10471': 'Bronx', '10472': 'Bronx', '10473': 'Bronx', '10474': 'Bronx',
+            '10475': 'Bronx',
+
+            # Brooklyn
+            '11201': 'Brooklyn', '11203': 'Brooklyn', '11204': 'Brooklyn', '11205': 'Brooklyn',
+            '11206': 'Brooklyn', '11207': 'Brooklyn', '11208': 'Brooklyn', '11209': 'Brooklyn',
+            '11210': 'Brooklyn', '11211': 'Brooklyn', '11212': 'Brooklyn', '11213': 'Brooklyn',
+            '11214': 'Brooklyn', '11215': 'Brooklyn', '11216': 'Brooklyn', '11217': 'Brooklyn',
+            '11218': 'Brooklyn', '11219': 'Brooklyn', '11220': 'Brooklyn', '11221': 'Brooklyn',
+            '11222': 'Brooklyn', '11223': 'Brooklyn', '11224': 'Brooklyn', '11225': 'Brooklyn',
+            '11226': 'Brooklyn', '11228': 'Brooklyn', '11229': 'Brooklyn', '11230': 'Brooklyn',
+            '11231': 'Brooklyn', '11232': 'Brooklyn', '11233': 'Brooklyn', '11234': 'Brooklyn',
+            '11235': 'Brooklyn', '11236': 'Brooklyn', '11237': 'Brooklyn', '11238': 'Brooklyn',
+            '11239': 'Brooklyn', '11249': 'Brooklyn', '11252': 'Brooklyn', '11256': 'Brooklyn',
+
+            # Queens
+            '11101': 'Queens', '11102': 'Queens', '11103': 'Queens', '11104': 'Queens',
+            '11105': 'Queens', '11106': 'Queens', '11109': 'Queens', '11354': 'Queens',
+            '11355': 'Queens', '11356': 'Queens', '11357': 'Queens', '11358': 'Queens',
+            '11360': 'Queens', '11361': 'Queens', '11362': 'Queens', '11363': 'Queens',
+            '11364': 'Queens', '11365': 'Queens', '11366': 'Queens', '11367': 'Queens',
+            '11368': 'Queens', '11369': 'Queens', '11370': 'Queens', '11372': 'Queens',
+            '11373': 'Queens', '11374': 'Queens', '11375': 'Queens', '11377': 'Queens',
+            '11378': 'Queens', '11379': 'Queens', '11385': 'Queens', '11411': 'Queens',
+            '11412': 'Queens', '11413': 'Queens', '11414': 'Queens', '11415': 'Queens',
+            '11416': 'Queens', '11417': 'Queens', '11418': 'Queens', '11419': 'Queens',
+            '11420': 'Queens', '11421': 'Queens', '11422': 'Queens', '11423': 'Queens',
+            '11426': 'Queens', '11427': 'Queens', '11428': 'Queens', '11429': 'Queens',
+            '11432': 'Queens', '11433': 'Queens', '11434': 'Queens', '11435': 'Queens',
+            '11436': 'Queens', '11691': 'Queens', '11692': 'Queens', '11693': 'Queens',
+            '11694': 'Queens', '11697': 'Queens',
+
+            # Staten Island
+            '10301': 'Staten Island', '10302': 'Staten Island', '10303': 'Staten Island',
+            '10304': 'Staten Island', '10305': 'Staten Island', '10306': 'Staten Island',
+            '10307': 'Staten Island', '10308': 'Staten Island', '10309': 'Staten Island',
+            '10310': 'Staten Island', '10311': 'Staten Island', '10312': 'Staten Island',
+            '10313': 'Staten Island', '10314': 'Staten Island'
+        }
+
+        return zip_to_borough.get(str(zip_code), 'NYC')
+
+    def get_population_density(self, borough):
+        """Get population density description for borough"""
+
+        # NYC borough population densities (approximate)
+        density_map = {
+            'Manhattan': 'Very High (74,000/sq mi)',
+            'Brooklyn': 'High (37,000/sq mi)',
+            'Bronx': 'High (34,000/sq mi)',
+            'Queens': 'Medium (21,000/sq mi)',
+            'Staten Island': 'Low (8,000/sq mi)',
+            'NYC': 'High (27,000/sq mi)'
+        }
+
+        return density_map.get(borough, 'Medium')
 
 # Example usage and testing
 if __name__ == "__main__":

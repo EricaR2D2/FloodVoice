@@ -633,7 +633,7 @@ class PatternDetector:
                     context_factors.append(f"Tick-borne disease activity detected: {tick_info['cases_this_week']} cases this week in area")
 
         elif pattern_type == 'drop':
-            base_explanation = f"🟢 POSITIVE HEALTH TREND: Respiratory ER visits at {hospital} (ZIP {zip_code}) decreased to {current_value} visits on {date_str}, showing a {pct_change:.1f}% improvement below the 7-day average."
+            base_explanation = f"🟢 POSITIVE HEALTH TREND: Respiratory ER visits at {hospital} (ZIP {zip_code}) decreased to {current_value} visits on {date_str}, showing a {pct_change:.1f}% improvement below the 7-day average. This decline indicates improved community respiratory health."
 
             # Add context for drops - focus on positive health indicators
             if 'air_quality' in context:
@@ -683,7 +683,11 @@ class PatternDetector:
             context_text = ". ".join(context_factors)
             full_explanation = f"{base_explanation} {context_text}."
         else:
-            full_explanation = f"{base_explanation} This pattern warrants investigation to determine underlying causes."
+            # Only suggest investigation for negative health trends (spikes and consistently high)
+            if pattern_type in ['spike', 'consistently_high']:
+                full_explanation = f"{base_explanation} This pattern warrants investigation to determine underlying causes."
+            else:  # For drops (positive trends)
+                full_explanation = f"{base_explanation} This positive trend should be monitored to understand contributing factors for potential replication."
 
         # Add epidemiologically sound confidence and urgency indicators
         urgency = self.determine_epidemiological_urgency(pattern_type, confidence, pct_change)
