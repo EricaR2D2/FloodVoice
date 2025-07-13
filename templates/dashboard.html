@@ -39,14 +39,14 @@
 <!-- Summary Cards -->
 <div class="row section-spacing">
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card border-left-primary shadow h-100">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        <div class="small fw-bold text-primary text-uppercase mb-1">
                             Real-Time ER Records
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRecords">
+                        <div class="h5 mb-0 fw-bold text-dark" id="totalRecords">
                             <i class="fas fa-spinner fa-spin"></i>
                         </div>
                     </div>
@@ -59,14 +59,14 @@
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-success shadow h-100 py-2">
+        <div class="card border-left-success shadow h-100">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                        <div class="small fw-bold text-success text-uppercase mb-1">
                             Current Alerts
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalPatterns">
+                        <div class="h5 mb-0 fw-bold text-dark" id="totalPatterns">
                             <i class="fas fa-spinner fa-spin"></i>
                         </div>
                     </div>
@@ -79,14 +79,14 @@
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-info shadow h-100 py-2">
+        <div class="card border-left-info shadow h-100">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        <div class="small fw-bold text-info text-uppercase mb-1">
                             Data Freshness
                         </div>
-                        <div class="h6 mb-0 font-weight-bold text-gray-800" id="latestData">
+                        <div class="h6 mb-0 fw-bold text-dark" id="latestData">
                             <i class="fas fa-spinner fa-spin"></i>
                         </div>
                     </div>
@@ -99,14 +99,14 @@
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-warning shadow h-100 py-2">
+        <div class="card border-left-warning shadow h-100">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                        <div class="small fw-bold text-warning text-uppercase mb-1">
                             Last Scan
                         </div>
-                        <div class="h6 mb-0 font-weight-bold text-gray-800" id="lastUpdate">
+                        <div class="h6 mb-0 fw-bold text-dark" id="lastUpdate">
                             <i class="fas fa-spinner fa-spin"></i>
                         </div>
                     </div>
@@ -251,6 +251,7 @@
     .border-left-success { border-left: 0.25rem solid var(--success-color) !important; }
     .border-left-info { border-left: 0.25rem solid var(--info-color) !important; }
     .border-left-warning { border-left: 0.25rem solid var(--warning-color) !important; }
+    .border-left-danger { border-left: 0.25rem solid var(--danger-color) !important; }
     .text-gray-300 { color: var(--gray-400) !important; }
     .text-gray-500 { color: var(--gray-500) !important; }
     .text-gray-800 { color: var(--gray-800) !important; }
@@ -336,8 +337,8 @@ function initializeCharts() {
             datasets: [{
                 label: 'Total ER Respiratory Visits',
                 data: [],
-                borderColor: '#4e73df',
-                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color'),
+                backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color').replace(')', ', 0.1)').replace('rgb', 'rgba'),
                 borderWidth: 2,
                 fill: true,
                 tension: 0.3
@@ -383,9 +384,14 @@ function initializeCharts() {
             labels: [],
             datasets: [{
                 data: [],
-                backgroundColor: ['#e74a3b', '#f39c12', '#3498db', '#2ecc71'],
+                backgroundColor: [
+                    getComputedStyle(document.documentElement).getPropertyValue('--danger-color'),
+                    getComputedStyle(document.documentElement).getPropertyValue('--warning-color'),
+                    getComputedStyle(document.documentElement).getPropertyValue('--info-color'),
+                    getComputedStyle(document.documentElement).getPropertyValue('--success-color')
+                ],
                 borderWidth: 2,
-                borderColor: '#ffffff'
+                borderColor: getComputedStyle(document.documentElement).getPropertyValue('--white')
             }]
         },
         options: {
@@ -471,9 +477,14 @@ function updateCharts() {
 }
 
 function updatePatternLegend(patterns) {
-    const colors = ['#e74a3b', '#f39c12', '#3498db', '#2ecc71'];
+    const colors = [
+        getComputedStyle(document.documentElement).getPropertyValue('--danger-color'),
+        getComputedStyle(document.documentElement).getPropertyValue('--warning-color'),
+        getComputedStyle(document.documentElement).getPropertyValue('--info-color'),
+        getComputedStyle(document.documentElement).getPropertyValue('--success-color')
+    ];
     let legendHtml = '';
-    
+
     patterns.forEach((pattern, index) => {
         const color = colors[index % colors.length];
         legendHtml += `
@@ -483,7 +494,7 @@ function updatePatternLegend(patterns) {
             </span>
         `;
     });
-    
+
     document.getElementById('patternLegend').innerHTML = legendHtml;
 }
 
