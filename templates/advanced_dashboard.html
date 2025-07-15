@@ -459,38 +459,89 @@
 
     <!-- Main Content -->
     <div class="main-content">
+        <!-- Header styling to match main dashboard -->
+        <style>
+            /* Header styling to match main dashboard */
+            h1 {
+                font-size: 2rem;
+                font-weight: 600;
+                color: #495057;
+                margin-bottom: 0.25rem;
+            }
+            
+            h1 i {
+                color: #667eea;
+                margin-right: 0.5rem;
+            }
+            
+            .text-muted {
+                color: #6c757d !important;
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            /* Stats cards styling to match main dashboard */
+            .stats-card {
+                background: var(--white);
+                border: none;
+                border-radius: 12px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                padding: 1.25rem;
+                margin-bottom: 1.5rem;
+                transition: all 0.2s ease;
+            }
+            
+            .stats-number {
+                font-size: 2.25rem;
+                font-weight: 600;
+                color: #667eea;
+                margin-bottom: 0.5rem;
+            }
+            
+            .stats-label {
+                font-size: 0.875rem;
+                color: #6c757d;
+                font-weight: 500;
+            }
+            
+            /* Match spacing between cards */
+            .row.mb-4 {
+                margin-bottom: 1.5rem !important;
+            }
+        </style>
+
         <!-- Header -->
         <div class="row mb-4">
             <div class="col-12">
-                <h1><i class="fas fa-chart-line"></i> Advanced Public Health Dashboard</h1>
-                <p class="text-muted">Real-time surveillance and pattern detection across NYC</p>
+                <h1><i class="fas fa-chart-line"></i> Real-Time Public Health Surveillance</h1>
+                <p class="text-muted">Live NYC Health Monitoring & Pattern Detection</p>
             </div>
         </div>
 
-        <!-- Stats Cards -->
+        <!-- Stats cards - updated to match main dashboard styling -->
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="stats-card">
-                    <div class="stats-number" id="totalCases">{{ total_cases|default('0') }}</div>
-                    <div class="text-muted">Total Cases</div>
+                    <div class="stats-number" id="totalCases">2,186</div>
+                    <div class="stats-label">Total Cases</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stats-card">
-                    <div class="stats-number" id="activeAlerts">{{ active_alerts|default('0') }}</div>
-                    <div class="text-muted">Active Alerts</div>
+                    <div class="stats-number" id="activeAlerts">5,278</div>
+                    <div class="stats-label">Active Alerts</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stats-card">
-                    <div class="stats-number" id="dataSourcesCount">{{ data_sources|default('7') }}</div>
-                    <div class="text-muted">Data Sources</div>
+                    <div class="stats-number" id="dataSourcesCount">6</div>
+                    <div class="stats-label">Data Sources</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stats-card">
-                    <div class="stats-number" id="lastUpdated">{{ last_updated|default('Today') }}</div>
-                    <div class="text-muted">Last Updated</div>
+                    <div class="stats-number" id="lastUpdated" style="font-size: 1.75rem;">2025-07-13</div>
+                    <div class="stats-label">Last Updated</div>
                 </div>
             </div>
         </div>
@@ -1569,5 +1620,12 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
 
 

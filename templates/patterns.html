@@ -205,11 +205,11 @@
 
 {% block extra_css %}
 <style>
-    .border-left-danger { border-left: 0.25rem solid #e74a3b !important; }
-    .border-left-info { border-left: 0.25rem solid #36b9cc !important; }
-    .border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
-    .border-left-success { border-left: 0.25rem solid #1cc88a !important; }
-    
+    .border-left-danger { border-left: 0.25rem solid var(--danger-color) !important; }
+    .border-left-info { border-left: 0.25rem solid var(--info-color) !important; }
+    .border-left-warning { border-left: 0.25rem solid var(--warning-color) !important; }
+    .border-left-success { border-left: 0.25rem solid var(--success-color) !important; }
+
     .pattern-card {
         border-left: 4px solid;
         margin-bottom: 1rem;
@@ -218,23 +218,23 @@
     .pattern-card:hover {
         transform: translateX(5px);
     }
-    .pattern-spike { border-left-color: #e74a3b; }
-    .pattern-drop { border-left-color: #36b9cc; }
-    .pattern-high { border-left-color: #f6c23e; }
-    
+    .pattern-spike { border-left-color: var(--danger-color); }
+    .pattern-drop { border-left-color: var(--info-color); }
+    .pattern-high { border-left-color: var(--warning-color); }
+
     .confidence-bar {
         height: 6px;
         border-radius: 3px;
-        background-color: #e9ecef;
+        background-color: var(--gray-200);
         overflow: hidden;
     }
     .confidence-fill {
         height: 100%;
         transition: width 0.3s ease;
     }
-    .confidence-high { background-color: #28a745; }
-    .confidence-medium { background-color: #ffc107; }
-    .confidence-low { background-color: #dc3545; }
+    .confidence-high { background-color: var(--success-color); }
+    .confidence-medium { background-color: var(--warning-color); }
+    .confidence-low { background-color: var(--danger-color); }
 </style>
 {% endblock %}
 
@@ -657,18 +657,19 @@ function createForecastChart(forecast) {
     // Create combined labels (historical + forecast)
     const allLabels = [...historicalDates, ...forecast.dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))];
 
-    // Prepare datasets
+    // Prepare datasets - using design system colors
+    const dangerColor = '#dc3545'; // var(--danger-color) from design system
     const datasets = [
         {
             label: 'Forecast',
             data: [...Array(historicalDates.length).fill(null), ...forecast.values],
-            borderColor: '#e74a3b',
-            backgroundColor: 'rgba(231, 74, 59, 0.1)',
+            borderColor: dangerColor,
+            backgroundColor: 'rgba(220, 53, 69, 0.1)',
             borderDash: [5, 5],
             borderWidth: 2,
             fill: false,
-            pointBackgroundColor: '#e74a3b',
-            pointBorderColor: '#e74a3b',
+            pointBackgroundColor: dangerColor,
+            pointBorderColor: dangerColor,
             pointRadius: 4
         }
     ];
@@ -678,8 +679,8 @@ function createForecastChart(forecast) {
         datasets.push({
             label: 'Confidence Interval (Upper)',
             data: [...Array(historicalDates.length).fill(null), ...forecast.upper_bound],
-            borderColor: 'rgba(231, 74, 59, 0.3)',
-            backgroundColor: 'rgba(231, 74, 59, 0.1)',
+            borderColor: 'rgba(220, 53, 69, 0.3)',
+            backgroundColor: 'rgba(220, 53, 69, 0.1)',
             fill: '+1',
             borderWidth: 1,
             pointRadius: 0
@@ -688,8 +689,8 @@ function createForecastChart(forecast) {
         datasets.push({
             label: 'Confidence Interval (Lower)',
             data: [...Array(historicalDates.length).fill(null), ...forecast.lower_bound],
-            borderColor: 'rgba(231, 74, 59, 0.3)',
-            backgroundColor: 'rgba(231, 74, 59, 0.1)',
+            borderColor: 'rgba(220, 53, 69, 0.3)',
+            backgroundColor: 'rgba(220, 53, 69, 0.1)',
             fill: false,
             borderWidth: 1,
             pointRadius: 0
