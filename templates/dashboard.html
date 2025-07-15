@@ -36,6 +36,39 @@
     </div>
 </div>
 
+<!-- Data Sources Status -->
+<div class="row section-spacing">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 fw-bold text-primary">
+                    <i class="fas fa-database me-2"></i>Data Sources Status
+                </h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                        <div class="dropdown-header">Data Source Actions:</div>
+                        <a class="dropdown-item" href="#" onclick="refreshDataSources()">
+                            <i class="fas fa-sync-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                            Refresh All Sources
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="dataSourcesStatus" class="row">
+                    <div class="col-12 text-center">
+                        <i class="fas fa-spinner fa-spin fa-2x text-gray-400"></i>
+                        <p class="mt-2 text-muted">Loading data sources...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Summary Cards -->
 <div class="row section-spacing">
     <div class="col-xl-3 col-md-6 mb-4">
@@ -88,6 +121,9 @@
                         </div>
                         <div class="h6 mb-0 fw-bold text-dark" id="latestData">
                             <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <div class="small text-muted mt-1" id="freshnessDetails">
+                            Loading data sources...
                         </div>
                     </div>
                     <div class="col-auto">
@@ -309,11 +345,38 @@ function updateSummaryCards() {
             const totalPatternsEl = document.getElementById('totalPatterns');
             const latestDataEl = document.getElementById('latestData');
             const lastUpdateEl = document.getElementById('lastUpdate');
+            const freshnessDetailsEl = document.getElementById('freshnessDetails');
 
             if (totalRecordsEl) totalRecordsEl.textContent = data.total_hospital_records.toLocaleString();
             if (totalPatternsEl) totalPatternsEl.textContent = data.total_patterns_detected.toLocaleString();
             if (latestDataEl) latestDataEl.textContent = formatDate(data.latest_data_date);
             if (lastUpdateEl) lastUpdateEl.textContent = formatTime(data.last_update);
+
+            // Update freshness details
+            if (freshnessDetailsEl && data.overall_freshness) {
+                const status = data.overall_freshness.status;
+                const current = data.overall_freshness.current_sources;
+                const total = data.overall_freshness.total_sources;
+
+                let statusText = '';
+                let statusClass = '';
+
+                if (status === 'excellent') {
+                    statusText = `Excellent (${current}/${total} current)`;
+                    statusClass = 'text-success';
+                } else if (status === 'good') {
+                    statusText = `Good (${current}/${total} current)`;
+                    statusClass = 'text-warning';
+                } else {
+                    statusText = `Needs Attention (${current}/${total} current)`;
+                    statusClass = 'text-danger';
+                }
+
+                freshnessDetailsEl.innerHTML = `<span class="${statusClass}">${statusText}</span>`;
+            }
+
+            // Update data sources status section
+            updateDataSourcesStatus(data.data_freshness);
         })
         .catch(error => {
             console.error('Error updating summary cards:', error);
@@ -404,6 +467,81 @@ function initializeCharts() {
             }
         }
     });
+}
+
+function updateDataSourcesStatus(dataFreshness) {
+    const container = document.getElementById('dataSourcesStatus');
+    if (!container || !dataFreshness) return;
+
+    let html = '';
+
+    // Sort data sources by priority (high first)
+    const sortedSources = Object.entries(dataFreshness).sort((a, b) => {
+        const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 };
+        return priorityOrder[a[1].priority] - priorityOrder[b[1].priority];
+    });
+
+    sortedSources.forEach(([key, source]) => {
+        const status = source.status || 'unknown';
+        const daysOld = source.days_old;
+        const latestDate = source.latest_date;
+
+        let statusIcon = '';
+        let statusClass = '';
+        let statusText = '';
+
+        switch (status) {
+            case 'current':
+                statusIcon = 'fas fa-check-circle';
+                statusClass = 'text-success';
+                statusText = daysOld === 0 ? 'Today' : `${daysOld} day${daysOld > 1 ? 's' : ''} ago`;
+                break;
+            case 'recent':
+                statusIcon = 'fas fa-clock';
+                statusClass = 'text-warning';
+                statusText = `${daysOld} days ago`;
+                break;
+            case 'outdated':
+                statusIcon = 'fas fa-exclamation-triangle';
+                statusClass = 'text-danger';
+                statusText = `${daysOld} days ago`;
+                break;
+            default:
+                statusIcon = 'fas fa-question-circle';
+                statusClass = 'text-muted';
+                statusText = 'Unknown';
+        }
+
+        html += `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card border-left-${status === 'current' ? 'success' : status === 'recent' ? 'warning' : 'danger'} h-100">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="${statusIcon} fa-2x ${statusClass}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold text-dark">${source.source_name}</div>
+                                <div class="small text-muted">${source.source_type}</div>
+                                <div class="small ${statusClass} fw-bold">${statusText}</div>
+                                ${latestDate ? `<div class="small text-muted">Latest: ${formatDate(latestDate)}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <div class="small text-muted">${source.description}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function refreshDataSources() {
+    showNotification('Refreshing data sources...', 'info');
+    updateDashboard();
 }
 
 function updateCharts() {

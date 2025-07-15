@@ -60,14 +60,43 @@ class DashboardManager:
         conn = self.get_database_connection()
 
         try:
-            # Add data freshness check with visual indicators
+            # Enhanced data freshness check with detailed source information
             data_freshness = {
-                'hospital_data': self.get_data_freshness('real_hospital_data', 'date'),
-                'nyc_covid_data': self.get_data_freshness('nyc_covid_data', 'date_of_interest'),
-                'covid_daily_counts': self.get_data_freshness('covid_daily_counts', 'date_of_interest'),
-                'air_quality_data': self.get_data_freshness('enhanced_air_quality_data', 'date'),
-                'restaurant_data': self.get_data_freshness('restaurant_inspection_data', 'date'),
-                'cdc_ili_data': self.get_data_freshness('cdc_ili_data', 'week_ending_date')
+                'covid_daily_counts': {
+                    **self.get_data_freshness('covid_daily_counts', 'date_of_interest'),
+                    'source_name': 'COVID-19 Daily Counts',
+                    'source_type': 'NYC Open Data',
+                    'priority': 'high',
+                    'description': 'Daily COVID-19 cases, hospitalizations, and deaths by borough'
+                },
+                'restaurant_data': {
+                    **self.get_data_freshness('restaurant_inspection_data', 'date'),
+                    'source_name': 'Restaurant Inspections',
+                    'source_type': 'NYC Open Data',
+                    'priority': 'high',
+                    'description': 'Restaurant inspection results and foodborne illness risk'
+                },
+                'flu_surveillance': {
+                    **self.get_data_freshness('flu_surveillance_data', 'date'),
+                    'source_name': 'Flu Surveillance',
+                    'source_type': 'CDC FluView (Current)',
+                    'priority': 'medium',
+                    'description': 'CDC FluView influenza-like illness surveillance for NY region'
+                },
+                'air_quality_data': {
+                    **self.get_data_freshness('enhanced_air_quality_data', 'date'),
+                    'source_name': 'Air Quality',
+                    'source_type': 'EPA AirNow (Current)',
+                    'priority': 'medium',
+                    'description': 'Real-time air quality index and health risk indicators'
+                },
+                'hospital_data': {
+                    **self.get_data_freshness('real_hospital_data', 'date'),
+                    'source_name': 'Hospital ER Visits',
+                    'source_type': 'Derived from COVID Data',
+                    'priority': 'high',
+                    'description': 'Emergency department respiratory visits by location'
+                }
             }
             
             print("📊 Getting counts...")
@@ -140,6 +169,21 @@ class DashboardManager:
             print(f"✅ Data sources: {data_sources}")
 
             print("📊 Building result...")
+
+            # Calculate overall data freshness status
+            current_sources = sum(1 for source in data_freshness.values() if source.get('status') == 'current')
+            recent_sources = sum(1 for source in data_freshness.values() if source.get('status') == 'recent')
+            outdated_sources = sum(1 for source in data_freshness.values() if source.get('status') == 'outdated')
+            total_sources = len(data_freshness)
+
+            # Determine overall freshness status
+            if current_sources >= total_sources * 0.6:  # 60% or more current
+                overall_freshness = 'excellent'
+            elif current_sources + recent_sources >= total_sources * 0.8:  # 80% current or recent
+                overall_freshness = 'good'
+            else:
+                overall_freshness = 'needs_attention'
+
             result = {
                 'total_hospital_records': hospital_count,
                 'total_patterns_detected': pattern_count,
@@ -147,7 +191,14 @@ class DashboardManager:
                 'recent_patterns': recent_patterns.to_dict('records') if not recent_patterns.empty else [],
                 'data_sources': data_sources,
                 'last_update': datetime.now().isoformat(),
-                'data_freshness': data_freshness
+                'data_freshness': data_freshness,
+                'overall_freshness': {
+                    'status': overall_freshness,
+                    'current_sources': current_sources,
+                    'recent_sources': recent_sources,
+                    'outdated_sources': outdated_sources,
+                    'total_sources': total_sources
+                }
             }
             print(f"✅ Result built successfully with {len(result)} keys")
             return result
