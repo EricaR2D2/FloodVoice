@@ -591,7 +591,8 @@
             </div>
         </div>
 
-        <!-- Charts Row -->
+        <!-- Charts Row - Temporarily Disabled for Demo -->
+        <!--
         <div class="row mb-4">
             <div class="col-md-6">
                 <div class="card">
@@ -614,6 +615,7 @@
                 </div>
             </div>
         </div>
+        -->
 
         <!-- Data Tables -->
         <div class="row">
@@ -712,8 +714,13 @@
             L.control.layers({}, {}, {collapsed: false}).addTo(healthMap);
         }
 
-        // Initialize charts
+        // Initialize charts - Temporarily Disabled for Demo
         function initializeCharts() {
+            // Charts temporarily disabled to prevent blank display during demo
+            console.log('Charts initialization skipped for demo');
+            return; // Skip chart initialization
+
+            /*
             // Illness Distribution Chart
             const illnessCtx = document.getElementById('illnessChart').getContext('2d');
             chartInstances.illness = new Chart(illnessCtx, {
@@ -778,6 +785,7 @@
                     }
                 }
             });
+            */
         }
 
         // Setup event listeners
@@ -1390,6 +1398,8 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    // Chart updates temporarily disabled for demo
+                    /*
                     // Update illness distribution chart
                     if (data.illness_distribution) {
                         chartInstances.illness.data.datasets[0].data = data.illness_distribution.values;
@@ -1402,6 +1412,7 @@
                         chartInstances.trend.data.datasets = data.trend_data.datasets;
                         chartInstances.trend.update();
                     }
+                    */
                 }
             })
             .catch(error => {
