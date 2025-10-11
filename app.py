@@ -846,6 +846,12 @@ def index():
     """Main dashboard page."""
     return render_template('dashboard.html')
 
+@app.route('/flood-dashboard')
+@login_required
+def flood_dashboard():
+    """Flood monitoring dashboard - redirect to dedicated flood app."""
+    return redirect('http://localhost:5001/flood-dashboard')
+
 @app.route('/api/summary')
 @login_required
 def api_summary():

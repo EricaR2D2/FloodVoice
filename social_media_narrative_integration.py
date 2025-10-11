@@ -70,11 +70,21 @@ class SocialMediaNarrativeProcessor:
             ]
             
             flood_templates = [
-                "Street flooding again in {location}! This happens every time it rains. #Flooding #NYC",
-                "Basement flooded AGAIN in {location}. City needs better drainage infrastructure! #FloodDamage",
-                "Subway station at {location} completely flooded. How are we supposed to get to work? #MTAFlooding",
-                "Storm surge warnings for {location}. Time to move everything upstairs again. #StormSurge",
-                "Third time this month - {location} streets are underwater after heavy rain. #UrbanFlooding"
+                "🌊 MAJOR FLOODING on {street} in {location}! Water up to my car doors. Can't get home! #FloodEmergency #NYC #Help",
+                "My basement is COMPLETELY flooded in {location} 😭 This is the 3rd time this year! Where's the city?? #FloodDamage #NYCFlooding",
+                "🚨 SUBWAY STATION FLOODED at {location} - trains not running. Thousands of people stranded! #MTAFlooding #NYCEmergency",
+                "Storm surge hitting {location} HARD right now! Water coming over the seawall. Evacuating! #StormSurge #ClimateChange",
+                "Street flooding so bad in {location} that cars are floating! This is insane! 📹 #UrbanFlooding #ExtremeWeather",
+                "Water main burst + heavy rain = DISASTER in {location}. Whole block underwater! #WaterMain #Flooding",
+                "🆘 EMERGENCY: Elderly neighbors trapped by flooding in {location}. Need help! #FloodRescue #Community",
+                "Flood waters rising fast in {location}! Moving to 2nd floor. This climate change is real! #FloodAlert #NYC",
+                "UNBELIEVABLE flooding in {location} - never seen anything like this! Infrastructure failing! #InfrastructureFail",
+                "My {location} apartment building basement flooded. All our belongings destroyed 😢 #FloodVictim #NYCHousing",
+                "🌊 Flash flood warning for {location} - water already ankle deep and rising! #FlashFlood #WeatherAlert",
+                "Drainage system completely overwhelmed in {location}. Streets are rivers! #DrainageFailure #UrbanPlanning",
+                "Climate change is HERE! {location} flooding worse every year. We need action NOW! #ClimateAction #Flooding",
+                "Flood insurance claim #3 this year for my {location} home. This is unsustainable! #FloodInsurance #ClimateReality",
+                "🚨 LIVE: Massive flooding in {location} - first responders on scene. Stay safe everyone! #EmergencyResponse"
             ]
             
             environmental_templates = [
@@ -107,7 +117,11 @@ class SocialMediaNarrativeProcessor:
                     category = 'health_concern'
                 elif post_type == 'flood':
                     template = random.choice(flood_templates)
-                    text = template.format(location=location)
+                    # Add realistic street names for more authenticity
+                    streets = ['Atlantic Ave', 'Flatbush Ave', 'Broadway', 'Queens Blvd', 'Grand Concourse',
+                              'Belt Parkway', 'FDR Drive', 'West Side Highway', '125th Street', 'Delancey St']
+                    street = random.choice(streets)
+                    text = template.format(location=location, street=street)
                     category = 'flood_concern'
                 else:
                     template = random.choice(environmental_templates)
