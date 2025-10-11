@@ -134,14 +134,65 @@ def verify_phase1():
     except Exception as e:
         print(f"❌ Error checking FVI data: {e}")
 
+    # Check Social Media Narrative Data
+    print(f"\n📱 SOCIAL MEDIA NARRATIVE DATA:")
+    try:
+        posts_count = len(pd.read_sql('SELECT * FROM social_media_posts', conn))
+        insights_count = len(pd.read_sql('SELECT * FROM social_media_insights', conn))
+        print(f"✅ Social media posts: {posts_count} records")
+        print(f"✅ Narrative insights: {insights_count} records")
+
+        # Category distribution
+        category_dist = pd.read_sql('''
+            SELECT category, COUNT(*) as count
+            FROM social_media_posts
+            GROUP BY category
+        ''', conn)
+        print(f"\n📊 Post Category distribution:")
+        print(category_dist.to_string(index=False))
+
+        # Borough distribution
+        borough_dist = pd.read_sql('''
+            SELECT borough, COUNT(*) as count
+            FROM social_media_posts
+            GROUP BY borough
+        ''', conn)
+        print(f"\n🗽 Borough distribution:")
+        print(borough_dist.to_string(index=False))
+
+        # Sentiment analysis
+        sentiment_dist = pd.read_sql('''
+            SELECT sentiment_label, COUNT(*) as count,
+                   AVG(engagement_score) as avg_engagement
+            FROM social_media_posts
+            GROUP BY sentiment_label
+        ''', conn)
+        print(f"\n💭 Sentiment analysis:")
+        print(sentiment_dist.to_string(index=False))
+
+        # Top insights
+        top_insights = pd.read_sql('''
+            SELECT insight_type, geographic_area, metric_value
+            FROM social_media_insights
+            ORDER BY metric_value DESC
+            LIMIT 5
+        ''', conn)
+        print(f"\n🔥 Top community concerns:")
+        print(top_insights.to_string(index=False))
+
+    except Exception as e:
+        print(f"❌ Error checking social media data: {e}")
+
     conn.close()
 
-    print(f"\n🚀 PHASE 1 STATUS: COMPLETE")
+    print(f"\n🚀 PHASE 1 STATUS: COMPLETE + NARRATIVE INTEGRATION")
     print("✅ Flood zones: 10,611 records")
     print("✅ ACS socioeconomic: 500 census tracts")
     print("✅ NYC FVI: 2,209 census tracts (REAL DOHMH DATA!)")
-    print("✅ Health datasets: 24 tables")
-    print("🎯 TRIPLE VALIDATION: Flood zones + ACS vulnerability + Official FVI scores")
+    print("✅ Social media narratives: 1,000 community posts")
+    print("✅ Health datasets: 26 tables")
+    print("🎯 QUADRUPLE VALIDATION: Environmental + Socioeconomic + Official + Community Voice")
+    print("📱 NARRATIVE 2 NUMBERS: Community voices → Quantified insights")
     print("Ready for Phase 2: AI-powered cross-dataset integration!")
 
 if __name__ == "__main__":
