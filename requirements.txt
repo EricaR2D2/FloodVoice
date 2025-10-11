@@ -22,6 +22,9 @@ werkzeug>=2.0.0
 folium>=0.14.0
 geopandas>=0.12.0
 branca>=0.6.0
+shapely>=2.0.0
+fiona>=1.8.0
+pyproj>=3.4.0
 
 # AI/ML integration
 # OpenRouter API (no additional package needed, uses requests)
