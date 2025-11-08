@@ -1,39 +1,45 @@
-# Public Health MVP - Python Dependencies
+# FloodVoice - Python Dependencies
 
 # Core data processing
 pandas>=2.0.0
 numpy>=1.24.0
-requests>=2.28.0
-
-# Time series forecasting
-statsmodels>=0.14.0
-scipy>=1.10.0
+requests>=2.31.0
 
 # Database
 # sqlite3 is built into Python
 
 # Web framework and real-time features
-flask>=3.1.0
-flask-socketio>=5.5.0
-flask-login>=0.6.0
-werkzeug>=2.0.0
+Flask==2.3.0
+Flask-SocketIO==5.3.0
+Flask-CORS==4.0.0
+python-socketio>=5.9.0
+python-engineio>=4.7.0
 
 # Interactive mapping and geospatial
 folium>=0.14.0
-geopandas>=0.12.0
+geopandas>=0.13.0
 branca>=0.6.0
 shapely>=2.0.0
-fiona>=1.8.0
+fiona>=1.9.0
 pyproj>=3.4.0
-textblob>=0.19.0
-nltk>=3.9
 
-# AI/ML integration
-# OpenRouter API (no additional package needed, uses requests)
+# NLP and text processing
+spacy>=3.5.0
+textblob>=0.17.1
+nltk>=3.8
+
+# AI integration (OpenRouter/OpenAI)
+openai>=1.0.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Geospatial distance calculations
+geopy>=2.3.0
 
 # Development and testing
-# pytest>=7.0.0  # Uncomment for testing
+pytest>=7.4.0
 
 # Production deployment
-gunicorn>=20.1.0
+gunicorn>=21.2.0
 eventlet>=0.33.0

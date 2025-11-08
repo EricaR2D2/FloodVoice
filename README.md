@@ -1,42 +1,46 @@
-# 🏥 Public Health MVP - Real-Time Surveillance Dashboard
+# 🌊 FloodVoice - Community-Centered Flood Emergency Response Platform
 
-A **live public health monitoring system** for NYC Center for Population Health Data Science analysts, featuring real-time data feeds, AI-powered pattern detection, and immediate alerting for current health threats.
+**Empowering community representatives to check on vulnerable residents during flood events using real-time data and AI-powered insights.**
 
-## 🎯 Value Proposition
+## 🎯 Vision
 
-**For data analysts at the NYC Center for Population Health Data Science**, this solution provides **real-time detection of emerging public health threats** by continuously monitoring live NYC health data and using transparent AI to flag current patterns as they develop, **unlike static reports and delayed dashboards**, which miss critical early warning signals and limit rapid response capabilities.
+FloodVoice bridges the gap between environmental monitoring data and human narratives by combining real-time FloodNet sensor readings with ground-level community reports. Using natural language processing (NLP), we transform community voices into actionable emergency response data, enabling more human-centered and equitable flood response planning.
 
 ## ✨ Key Features
 
-### 1. Live Health Data Surveillance
-- **Real-time NYC COVID data**: Current daily cases, hospitalizations, deaths by borough
-- **Live ER monitoring**: Respiratory illness visits across NYC hospitals
-- **Current data feeds**: CDC surveillance, air quality, and health indicators
-- **Data freshness tracking**: Clear visibility into how current your data is
+### 1. Real-Time Flood Monitoring
+- **FloodNet Integration**: Live sensor data from https://dataviz.floodnet.nyc/
+- **Interactive Map**: Visualize flood conditions across NYC neighborhoods
+- **Automated Alerts**: Instant notifications when flooding is detected
 
-### 2. Real-Time AI Pattern Detection
-- **Live pattern scanning**: Detects spikes, drops, and trends as they emerge
-- **Current threat focus**: Prioritizes patterns from the last 7-14 days
-- **Instant AI explanations**: Natural language insights about current health events
-- **Borough-level alerts**: Geographic targeting for NYC's 5 boroughs
+### 2. Community Narrative Integration
+- **Social Media Monitoring**: Track flood-related posts from affected communities
+- **NLP Processing**: Extract location, urgency, and sentiment from narratives
+- **Correlation Engine**: Match community reports with nearby sensor readings
 
-### 3. Immediate Alert Management & Response
-- **Real-time notifications**: Instant alerts when patterns are detected
-- **Current risk thresholds**: Configurable detection for live surveillance
-- **Live dashboard updates**: Automatic refresh of current health status
+### 3. Vulnerability-Focused Response
+- **NYC Flood Vulnerability Index (FVI)**: Identify high-risk populations
+- **FEMA Flood Zones**: Overlay official risk assessments
+- **Targeted Wellness Checks**: Prioritize vulnerable residents for outreach
+
+### 4. Partner Integration
+- **Wellness Check API**: Trigger automated SMS/voice calls to vulnerable residents
+- **Real-time Status**: Track campaign progress and resident responses
+- **Collaborative Response**: Coordinate with community organizations
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.10+
 - pip package manager
+- Git
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/EricaR2D2/PublicHealthMVP.git
-   cd PublicHealthMVP
+   git clone https://github.com/EricaR2D2/FloodVoice.git
+   cd FloodVoice
    ```
 
 2. **Install dependencies**
@@ -44,126 +48,152 @@ A **live public health monitoring system** for NYC Center for Population Health 
    pip install -r requirements.txt
    ```
 
-3. **Load real-time data (Phase 1)**
+3. **Set up environment variables**
    ```bash
-   python phase1_data_ingestion.py
+   cp .env.example .env
+   # Edit .env with your API keys
    ```
-   *Fetches current NYC COVID data, generates hospital ER data, and sets up real-time feeds*
 
-4. **Initialize pattern detection (Phase 2)**
+4. **Load demo data**
    ```bash
-   python phase2_pattern_detection.py
+   python demo_flood_posts_generator.py
+   python fema_flood_data_ingestion.py
+   python nyc_fvi_data_ingestion.py
    ```
-   *Sets up real-time pattern scanning and AI analysis capabilities*
 
-5. **Start live surveillance dashboard (Phase 3)**
+5. **Start the application**
    ```bash
    python app.py
    ```
-   *Launches the real-time monitoring interface with live updates*
 
-6. **Access the live dashboard**
-   - **Real-Time Dashboard**: http://localhost:5000 - Live health surveillance
-   - **Current Patterns**: http://localhost:5000/patterns - Active alerts and analysis
-   - **Alert Settings**: http://localhost:5000/settings - Configure real-time thresholds
+6. **Access the dashboard**
+   - Open your browser to http://localhost:5000
+   - View real-time flood monitoring and community reports
 
-## 📊 Dashboard Features
+## 📊 Dashboard Overview
 
 ### Main Dashboard
-- **Summary metrics**: Total records, patterns detected, data freshness
-- **Time series charts**: ER respiratory visits over time
-- **Pattern distribution**: Visual breakdown of alert types
-- **Recent alerts**: Latest pattern detections with AI explanations
+- **Live Map**: FloodNet sensors, community reports, vulnerability zones
+- **Metrics Panel**: Active sensors, community reports, flooding detected
+- **Correlation Feed**: Real-time matching of reports with sensor data
+- **AI Insights**: Automated analysis and recommended actions
 
-### Pattern Analysis
-- **Advanced filtering**: By type, location, date range, confidence
-- **Detailed view**: Full AI explanations and context data
-- **Statistics**: Pattern counts and confidence metrics
-- **Export capabilities**: CSV download of filtered results
-
-### Alert Settings
-- **Threshold configuration**: Spike (30%), Drop (30%), Consistently High (20%)
-- **Notification setup**: Email and Slack preferences
-- **Test functions**: Validate settings and data connectivity
+### Historical Analysis
+- View past flood events
+- Analyze correlation accuracy
+- Export data for research
 
 ## 🔧 Configuration
 
-### Pattern Detection Thresholds
-- **Spike Threshold**: 30% above 7-day average (configurable)
-- **Drop Threshold**: 30% below 7-day average (configurable)
-- **Consistently High**: 20% above average for 3+ days (configurable)
+### API Keys Required
 
-### Data Sources
-- **Hospital Data**: ER respiratory visits by ZIP code
-- **NYC COVID Data**: Daily cases, hospitalizations, deaths
-- **CDC ILI Data**: Influenza-like illness percentages
-- **Air Quality Data**: AQI, PM2.5, ozone levels
+1. **FloodNet API** (for sensor data)
+   - Get access from https://dataviz.floodnet.nyc/
+   - Add to `.env`: `FLOODNET_API_KEY=your_key`
 
-### AI Integration
-- **Model**: GPT-3.5-turbo via OpenRouter API
-- **Explanations**: Context-aware natural language analysis
-- **Transparency**: Shows data sources and reasoning
+2. **OpenRouter API** (for AI insights)
+   - Get key from https://openrouter.ai/
+   - Add to `.env`: `OPENROUTER_API_KEY=your_key`
+
+3. **NYC GeoClient API** (for geocoding)
+   - Get credentials from https://developer.cityofnewyork.us/
+   - Add to `.env`: `NYC_GEOCLIENT_APP_ID` and `NYC_GEOCLIENT_APP_KEY`
+
+### Alert Thresholds
+
+Configure flood severity thresholds in `.env`:
+```
+MINOR_FLOOD_THRESHOLD=2.0      # inches
+MODERATE_FLOOD_THRESHOLD=6.0   # inches
+MAJOR_FLOOD_THRESHOLD=12.0     # inches
+```
 
 ## 📁 Project Structure
 
 ```
-PublicHealthMVP/
-├── phase1_data_ingestion.py      # Data collection and cleaning
-├── phase2_pattern_detection.py   # AI pattern analysis
-├── app.py                        # Flask web application
-├── templates/                    # HTML templates
-│   ├── base.html                # Base template with navigation
-│   ├── dashboard.html           # Main dashboard
-│   ├── patterns.html            # Pattern analysis page
-│   └── settings.html            # Configuration page
-├── public_health_data.db         # SQLite database
-├── pattern_analysis_results.csv  # Pattern detection results
-├── requirements.txt              # Python dependencies
-└── README.md                     # This file
+FloodVoice/
+├── app.py                              # Main Flask application
+├── config.py                           # Configuration management
+├── flood_dashboard.py                  # Flood data processing logic
+├── requirements.txt                    # Python dependencies
+├── .env.example                        # Environment variables template
+├── README.md                           # This file
+├── FLOODVOICE_PRD.md                  # Product Requirements Document
+├── FLOODVOICE_BUILD_PLAN.md           # Development roadmap
+├── fema_flood_data_ingestion.py       # FEMA flood zone data loader
+├── nyc_fvi_data_ingestion.py          # NYC Flood Vulnerability Index loader
+├── social_media_narrative_integration.py  # Social media data processor
+├── demo_flood_posts_generator.py      # Demo data generator
+├── templates/                          # HTML templates
+│   └── flood_dashboard.html           # Main dashboard UI
+├── static/                             # Static assets
+│   ├── css/                           # Stylesheets
+│   ├── js/                            # JavaScript files
+│   └── geojson/                       # NYC boundaries, flood zones
+├── fema_data/                          # FEMA flood zone data
+├── fvi_data/                           # NYC FVI data
+└── social_media_data/                  # Community reports data
 ```
 
-## 🧪 Testing & Validation
+## 🧪 Demo Mode
 
-### Automated Testing
+FloodVoice includes a demo mode with realistic simulated data:
+
+1. **Generate demo flood posts**
+   ```bash
+   python demo_flood_posts_generator.py
+   ```
+
+2. **Enable demo mode in `.env`**
+   ```
+   DEMO_MODE=True
+   USE_MOCK_DATA=True
+   ```
+
+3. **Run the application**
+   - Dashboard will show simulated flood event in Astoria, Queens
+   - Community reports correlate with sensor readings
+   - AI generates insights based on demo scenario
+
+## 🔌 Partner API
+
+FloodVoice provides a REST API for partner calling systems:
+
+### Trigger Wellness Checks
 ```bash
-python test_phase2_validation.py
+POST /api/trigger-wellness-checks
+Content-Type: application/json
+
+{
+  "flood_event_id": "flood_2025_11_08_001",
+  "affected_zipcodes": ["11101", "11102"],
+  "severity": "moderate"
+}
 ```
 
-### Manual Testing
-1. **Data Ingestion**: Verify all data sources load successfully
-2. **Pattern Detection**: Confirm patterns are detected and explained
-3. **Dashboard**: Check all visualizations and real-time updates
-4. **Settings**: Test threshold changes and notifications
+### Receive Call Results
+```bash
+POST /api/wellness-check-result
+Content-Type: application/json
 
-## 🔮 Future Enhancements
-
-### Phase 4: Advanced Analytics
-- **Predictive modeling**: Forecast future health risks
-- **Scenario simulation**: "What-if" analysis capabilities
-- **Machine learning**: Automated threshold optimization
-- **Integration APIs**: Connect to external health systems
-
-### Production Deployment
-- **Scalability**: Multi-user support and load balancing
-- **Security**: Authentication and authorization
-- **Monitoring**: System health and performance metrics
-- **Backup**: Automated data backup and recovery
+{
+  "campaign_id": "wc_2025_11_08_001",
+  "resident_id": "12345",
+  "status": "completed",
+  "notes": "Resident is safe, no assistance needed"
+}
+```
 
 ## 📈 Success Metrics
 
-### Measurable Outcomes
-- **Time-to-detection**: 50% reduction in pattern identification time
-- **Data access**: Single interface vs. multiple system logins
-- **Alert accuracy**: <10% false positive rate
-- **User adoption**: Trust scores and usage analytics
-
-### Key Performance Indicators
-- **Pattern detection accuracy**: 95%+ true positive rate
-- **Response time**: <30 seconds for dashboard updates
-- **Data freshness**: Real-time to 5-minute delays
-- **System uptime**: 99.9% availability target
+- **Response Time**: Reduce time from flood detection to wellness check initiation by 70%
+- **Coverage**: Enable wellness checks for 500+ vulnerable residents per flood event
+- **Correlation Accuracy**: 85%+ match rate between sensor data and community reports
+- **User Adoption**: 10+ community organizations using platform within 3 months
 
 ## 🤝 Contributing
+
+We welcome contributions from the community! Please see our contributing guidelines.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -173,12 +203,24 @@ python test_phase2_validation.py
 
 ## 📄 License
 
-This project is developed for the NYC Center for Population Health Data Science.
+This project is developed for the NYC Pandemic Response Institute Data Team.
 
-## 📞 Support
+## 📞 Contact
 
-For questions or support, please contact the development team or create an issue in the repository.
+**Developer**: Erica Rodriguez  
+**Email**: erica.ro@pursuit.org  
+**Organization**: NYC Pandemic Response Institute
+
+## 🙏 Acknowledgments
+
+- **NYC FloodNet**: Real-time flood sensor data
+- **NYC DOHMH**: Flood Vulnerability Index data
+- **FEMA**: Flood risk zone data
+- **NYC Pandemic Response Institute**: Project support and funding
 
 ---
 
-**Built with ❤️ for public health analysts who deserve better tools.**
+**Built with ❤️ for vulnerable communities facing climate emergencies.**
+
+**Demo Date**: December 9, 2025 | NYC Pandemic Response Institute Data Team Meeting
+
