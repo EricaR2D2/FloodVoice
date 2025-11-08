@@ -1,9 +1,9 @@
 # FloodVoice - Product Requirements Document (PRD)
 
-**Version:** 1.0  
-**Date:** November 8, 2025  
-**Demo Date:** December 9, 2025  
-**Author:** Erica Rodriguez  
+**Version:** 1.0
+**Date:** November 8, 2025
+**Demo Date:** December 9, 2025
+**Development Team:** Erica Rowe-Owen, Kelvin Saldana, Ethan Davey, Josue Villalona, Shanell Holback, Jessenia Cintron
 **Organization:** NYC Pandemic Response Institute Data Team
 
 ---
