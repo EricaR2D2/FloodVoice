@@ -3,7 +3,7 @@
 **Project:** FloodVoice - Community-Centered Flood Emergency Response Platform  
 **Timeline:** November 8 - December 9, 2025 (31 days)  
 **Demo Date:** December 9, 2025  
-**Developer:** Erica Rodriguez
+**Developer:** Erica Rowe-Owen, Kelvin Saldana, Ethan Davey, Josue Villalona, Shanell Holback, Jessenia Cintron
 
 ---
 
