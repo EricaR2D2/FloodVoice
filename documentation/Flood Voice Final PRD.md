@@ -1,8 +1,14 @@
 # **Flood Voice PRD**
 
-**Project:** Flood Voice  
-**Owner:** Jessenia, Ethan, Erica, Josue, Kelvin, Shanell  
+**Project:** Flood Voice
+**Owner:** Jessenia, Ethan, Erica, Josue, Kelvin, Shanell
 **Date:** November 23rd, 2025
+**Last Updated:** December 8th, 2025 (Production Build)
+**Demo Date:** December 9th, 2025
+
+> **📋 NOTE:** This is the original PRD from November 23rd. For the **actual production build implementation status**, see **[PRODUCTION_BUILD_STATUS.md](./PRODUCTION_BUILD_STATUS.md)** which documents what was actually built, what changed, and what was deferred.
+
+---
 
 ## **Problem**
 
@@ -125,38 +131,162 @@ Once activated, the system triggers simultaneous outbound calls to all subscribe
 
 ## **Appendix**
 
-* **Tech Stack:** React (Frontend), Node.js (Backend), Twilio Programmable Voice (Telephony), OpenAI Whisper (Transcription), Supabase (Database).  
-* **Regulatory Reference (MVP Strategy):** For the pilot, we rely on **"Prior Express Consent"** obtained verbally by the Liaison. The Liaison assumes responsibility for this consent via the checkbox attestation in Journey 1\.  
-* **Data Privacy:** All voice recordings are encrypted at rest and accessible only to the registered Liaison.  
-* **CBO:** A Community-Based Organization (CBO) is typically a non-profit entity that operates within a specific community or geographical area.  
+### **Tech Stack (Production Build)**
+
+**Frontend:**
+* **Framework:** Next.js 16 (App Router, React 19)
+* **Styling:** Tailwind CSS + Framer Motion for animations
+* **UI Components:** Radix UI primitives (Dialog, Label, Slot)
+* **Icons:** Lucide React
+* **Charts:** Recharts for analytics visualizations
+* **Mapping:** Mapbox GL for interactive flood maps
+
+**Backend:**
+* **Runtime:** Node.js (Next.js API Routes)
+* **Database:** Supabase (PostgreSQL + Realtime subscriptions)
+* **Voice AI:** Vapi (conversational AI with GPT-4o-mini model, ElevenLabs "sarah" voice)
+* **Sentiment Analysis:** Google Gemini AI (gemini-2.5-flash-lite with fallback chain)
+* **Alerts:** Telegram Bot API for instant notifications
+* **Real-time:** Supabase Realtime (WebSocket subscriptions)
+
+**Database Schema:**
+* `profiles` - Liaison information (email, org_name, telegram_chat_id)
+* `residents` - Vulnerable residents (name, phone, age, address, health_conditions, zip_code, language, status)
+* `call_logs` - Call records (vapi_call_id, summary, risk_label, recording_url, transcript, sentiment_score, tags)
+
+**Key Integrations:**
+* **FloodNet API:** Real-time sensor data from https://api.floodnet.nyc/api/rest/deployments/flood
+* **Vapi Webhooks:** Function calls for immediate distress reporting, end-of-call reports with transcripts
+* **Gemini AI:** Fixed taxonomy tagging ["Medical", "Food/Water", "Power", "Evacuation", "Mental Health", "Property Damage", "Safe"]
+* **Telegram:** Distress alerts sent when sentiment_score >= 7
+
+### **Regulatory & Privacy**
+
+* **Regulatory Reference (MVP Strategy):** For the pilot, we rely on **"Prior Express Consent"** obtained verbally by the Liaison. The Liaison assumes responsibility for this consent via the checkbox attestation in Journey 1\.
+* **Data Privacy:** All voice recordings are encrypted at rest and accessible only to the registered Liaison. Call transcripts and audio stored in Supabase with RLS policies.
+* **CBO:** A Community-Based Organization (CBO) is typically a non-profit entity that operates within a specific community or geographical area.
 * **FloodNet NYC:** Our data dashboard was developed in partnership with FieldKit. The main page features a map view, allowing users to view all flood sensor readings in real time. Clicking on a sensor icon directs users to a data view page, where users can interact with historic time series data from a specific sensor.
 
-# Integrated FloodVoice System Architecture
+# **Integrated FloodVoice System Architecture (Production Build)**
 
-# Two-Layer System Design
+## **Two-Layer System Design**
 
-   LAYER 1: MONITORING DASHBOARD                
-  (FloodNet Sensors \+ Real-Time Detection)             
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            
-│        Live Map  			  Sensor        			Flood       
-│       (FloodNet)  		 	 Readings    			  Alerts        
-│  └──────────────┘  └──────────────┘  └──────────────┘            
-│   Monitors: 50+ sensors across NYC                                 
-│  Detects: Flood depth \> threshold in vulnerable zones            
-│  Triggers: Alert to CBO coordinators & liaisons                  
-└───────────────────────────────────────────────────────────  
-                              ↓  
-                    FLOOD DETECTED IN ZONE  
-                              ↓  
-    LAYER 2: RESPONSE DASHBOARD                      
-│              (Liaison Pod Management \+ Voice Calls)             
-│                                                                  
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            
-│ 	  Liaison     	 		 Manual     	  	 Call Status  
-│  	  Alert       			 Trigger     		 Dashboard               
-│  └──────────────┘  └──────────────┘  └──────────────┘          
-│  Notifies: Liaisons in affected ZIP codes                         
-│  Activates: Liaison clicks "Start Emergency Check-in"          
-│  Executes: Batch voice calls to vulnerable residents              
-└───────────────────────────────────────────────────────────
+### **LAYER 1: MONITORING DASHBOARD (Command Center)**
+**FloodNet Sensors + Real-Time Detection**
+
+**Components:**
+* **Live Map (Mapbox GL)** - Interactive NYC map with FloodNet sensor locations
+* **Sensor Readings** - Real-time flood depth data (updated every 5 minutes)
+* **Flood Alerts** - Automated detection when depth > 4 inches
+* **Analytics Dashboard** - Urgency Breakdown, Tag Distribution, Priority Queue
+
+**Functionality:**
+* Monitors: 50+ sensors across NYC via FloodNet API
+* Detects: Flood depth > 4 inches for 15+ minutes in vulnerable zones
+* Triggers: Telegram alert to CBO coordinators & liaisons
+* Displays: Historical trends, flooding count, sensor status
+
+**API Endpoints:**
+* `/api/floodnet/sensors` - Get all sensor locations
+* `/api/floodnet/flooding-count` - Count sensors currently flooding
+* `/api/floodnet/flooding-stream` - Server-sent events for real-time updates
+* `/api/cron/floodnet-monitor` - Automated monitoring cron job
+
+---
+
+### **LAYER 2: RESPONSE DASHBOARD (Liaison Interface)**
+**Pod Management + Voice Calls + Real-Time Monitoring**
+
+**Components:**
+* **Residents Management** (`/dashboard/residents`) - Add/edit vulnerable residents in pod
+* **Manual Trigger** - "Trigger Emergency Check-in" button (human-in-the-loop)
+* **Live Call Feed** (`/dashboard/calls`) - Real-time call status with audio playback
+* **Analytics** - Sentiment scores, tag breakdown, priority queue
+
+**Workflow:**
+1. **Liaison Alert** - Telegram notification when flooding detected in their ZIP code
+2. **Manual Activation** - Liaison logs in and clicks "Start Emergency Check-in"
+3. **Batch Calling** - Vapi initiates concurrent calls to all residents in pod
+4. **Real-Time Updates** - Dashboard updates via Supabase Realtime (WebSocket)
+5. **AI Analysis** - Gemini analyzes transcripts, assigns sentiment scores and tags
+6. **Distress Alerts** - Telegram alert sent if sentiment_score >= 7
+7. **Escalation** - Liaison listens to audio, calls 911 if needed
+
+**API Endpoints:**
+* `/api/vapi/trigger` - POST to initiate batch calls
+* `/api/vapi/webhook` - Receive call status updates and transcripts
+* `/api/telegram/send-alert` - Send distress alerts to liaisons
+* `/api/analytics/priority` - Get priority queue sorted by sentiment
+* `/api/analytics/trends` - Get tag distribution and trends
+
+---
+
+## **Data Flow Architecture**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  FloodNet API (External)                     │
+│              https://api.floodnet.nyc/                       │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│              Next.js API Route: /api/cron/                   │
+│              floodnet-monitor (Automated Polling)            │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+                   Flood Detected (>4 inches)
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│              Telegram Bot API (Alert Liaison)                │
+│              "Flood detected in your area"                   │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         Liaison Dashboard (/dashboard/calls)                 │
+│         Clicks "Trigger Emergency Check-in"                  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         Next.js API: /api/vapi/trigger                       │
+│         Initiates batch calls to all residents               │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         Vapi Voice AI (External Service)                     │
+│         GPT-4o-mini + ElevenLabs "sarah" voice               │
+│         Calls residents, records responses                   │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         Vapi Webhook: /api/vapi/webhook                      │
+│         Receives: function-call, end-of-call-report          │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         Google Gemini AI (Sentiment Analysis)                │
+│         Analyzes transcript, assigns tags & score            │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         Supabase Database (PostgreSQL)                       │
+│         Updates: call_logs, residents.status                 │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         Supabase Realtime (WebSocket)                        │
+│         Pushes updates to dashboard in real-time             │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         Liaison Dashboard (Auto-refresh)                     │
+│         Shows: Green (safe), Red (distress), Gray (pending)  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+                   If sentiment_score >= 7
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         Telegram Alert: "DISTRESS DETECTED"                  │
+│         Includes: resident name, audio link, transcript      │
+└─────────────────────────────────────────────────────────────┘
+```
 
