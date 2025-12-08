@@ -1,226 +1,104 @@
-# 🌊 FloodVoice - Community-Centered Flood Emergency Response Platform
+# FloodVoice 🌊🗣️
 
-**Empowering community representatives to check on vulnerable residents during flood events using real-time data and AI-powered insights.**
+**FloodVoice** is an AI-powered emergency response platform that transforms qualitative voice data into actionable intelligence for flood response teams. It bridges the gap between residents in distress and community liaisons by converting messy phone calls into structured data.
 
-## 🎯 Vision
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Status](https://img.shields.io/badge/status-Phase%206.5-success.svg)
 
-FloodVoice bridges the gap between environmental monitoring data and human narratives by combining real-time FloodNet sensor readings with ground-level community reports. Using natural language processing (NLP), we transform community voices into actionable emergency response data, enabling more human-centered and equitable flood response planning.
+---
 
-## ✨ Key Features
+## 🚀 Key Features
 
-### 1. Real-Time Flood Monitoring
-- **FloodNet Integration**: Live sensor data from https://dataviz.floodnet.nyc/
-- **Interactive Map**: Visualize flood conditions across NYC neighborhoods
-- **Automated Alerts**: Instant notifications when flooding is detected
+### 1. Narrative to Numbers Analytics
+We replace binary "Yes/No" inputs with rich sentiment analysis. By analyzing voice content, we extract:
+- **Urgency Scores (1-10)**: Automatically prioritizes residents based on distress levels.
+- **Visual Priority Queue**: Top 10 critical residents needing immediate attention.
+- **Tag Distribution**: Real-time breakdown of concerns (Medical, Evacuation, Power, etc.).
+- **4-Week Trends**: AI-generated insights on historical sentiment patterns.
 
-### 2. Community Narrative Integration
-- **Social Media Monitoring**: Track flood-related posts from affected communities
-- **NLP Processing**: Extract location, urgency, and sentiment from narratives
-- **Correlation Engine**: Match community reports with nearby sensor readings
+### 2. Role-Based Dashboards
+- **Command Center (`/dashboard`)**: High-level view for Directors/Coordinators. Features aggregated analytics, FloodNet sensor maps, and urgency distribution.
+- **Live Calls (`/dashboard/calls`)**: Focused real-time feed for Liaisons. Shows incoming transcripts, AI analysis, and allows for immediate callback.
 
-### 3. Vulnerability-Focused Response
-- **NYC Flood Vulnerability Index (FVI)**: Identify high-risk populations
-- **FEMA Flood Zones**: Overlay official risk assessments
-- **Targeted Wellness Checks**: Prioritize vulnerable residents for outreach
+### 3. Real-Time Flood Intelligence
+- **FloodNet Integration**: Live sensor data showing street-level flood depth.
+- **Automated Triage**: Residents are automatically categorized (Critical, Elevated, Moderate, Safe).
 
-### 4. Partner Integration
-- **Wellness Check API**: Trigger automated SMS/voice calls to vulnerable residents
-- **Real-time Status**: Track campaign progress and resident responses
-- **Collaborative Response**: Coordinate with community organizations
+---
 
-## 🚀 Quick Start
+## 🛠️ Tech Stack
+
+- **Framework**: [Next.js 14](https://nextjs.org/) (App Router, React 18)
+- **Database**: [Supabase](https://supabase.com/) (PostgreSQL + Realtime)
+- **Styling**: Tailwind CSS + `framer-motion` for animations
+- **AI/LLM**: Google Gemini (via Vapi) for sentiment analysis and tagging
+- **Voice**: Vapi for conversational AI agents
+- **Icons**: Lucide React
+
+---
+
+## 🚦 Getting Started
 
 ### Prerequisites
-- Python 3.10+
-- pip package manager
-- Git
+- Node.js 18+
+- Supabase project
+- Vapi account
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/EricaR2D2/FloodVoice.git
-   cd FloodVoice
+   git clone https://github.com/yourusername/flood-voice.git
+   cd flood-voice
    ```
 
 2. **Install dependencies**
    ```bash
-   pip install -r requirements.txt
+   npm install
    ```
 
-3. **Set up environment variables**
+3. **Environment Setup**
+   Create a `.env.local` file with the following keys:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   VAPI_PRIVATE_KEY=your_vapi_private_key
+   NEXT_PUBLIC_VAPI_PUBLIC_KEY=your_vapi_public_key
+   GEMINI_API_KEY=your_gemini_key
+   TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+   TELEGRAM_CHAT_ID=your_chat_id
+   ```
+
+4. **Run Development Server**
    ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
+   npm run dev
    ```
-
-4. **Load demo data**
-   ```bash
-   python demo_flood_posts_generator.py
-   python fema_flood_data_ingestion.py
-   python nyc_fvi_data_ingestion.py
-   ```
-
-5. **Start the application**
-   ```bash
-   python app.py
-   ```
-
-6. **Access the dashboard**
-   - Open your browser to http://localhost:5000
-   - View real-time flood monitoring and community reports
-
-## 📊 Dashboard Overview
-
-### Main Dashboard
-- **Live Map**: FloodNet sensors, community reports, vulnerability zones
-- **Metrics Panel**: Active sensors, community reports, flooding detected
-- **Correlation Feed**: Real-time matching of reports with sensor data
-- **AI Insights**: Automated analysis and recommended actions
-
-### Historical Analysis
-- View past flood events
-- Analyze correlation accuracy
-- Export data for research
-
-## 🔧 Configuration
-
-### API Keys Required
-
-1. **FloodNet API** (for sensor data)
-   - Get access from https://dataviz.floodnet.nyc/
-   - Add to `.env`: `FLOODNET_API_KEY=your_key`
-
-2. **OpenRouter API** (for AI insights)
-   - Get key from https://openrouter.ai/
-   - Add to `.env`: `OPENROUTER_API_KEY=your_key`
-
-3. **NYC GeoClient API** (for geocoding)
-   - Get credentials from https://developer.cityofnewyork.us/
-   - Add to `.env`: `NYC_GEOCLIENT_APP_ID` and `NYC_GEOCLIENT_APP_KEY`
-
-### Alert Thresholds
-
-Configure flood severity thresholds in `.env`:
-```
-MINOR_FLOOD_THRESHOLD=2.0      # inches
-MODERATE_FLOOD_THRESHOLD=6.0   # inches
-MAJOR_FLOOD_THRESHOLD=12.0     # inches
-```
-
-## 📁 Project Structure
-
-```
-FloodVoice/
-├── app.py                              # Main Flask application
-├── config.py                           # Configuration management
-├── flood_dashboard.py                  # Flood data processing logic
-├── requirements.txt                    # Python dependencies
-├── .env.example                        # Environment variables template
-├── README.md                           # This file
-├── FLOODVOICE_PRD.md                  # Product Requirements Document
-├── FLOODVOICE_BUILD_PLAN.md           # Development roadmap
-├── fema_flood_data_ingestion.py       # FEMA flood zone data loader
-├── nyc_fvi_data_ingestion.py          # NYC Flood Vulnerability Index loader
-├── social_media_narrative_integration.py  # Social media data processor
-├── demo_flood_posts_generator.py      # Demo data generator
-├── templates/                          # HTML templates
-│   └── flood_dashboard.html           # Main dashboard UI
-├── static/                             # Static assets
-│   ├── css/                           # Stylesheets
-│   ├── js/                            # JavaScript files
-│   └── geojson/                       # NYC boundaries, flood zones
-├── fema_data/                          # FEMA flood zone data
-├── fvi_data/                           # NYC FVI data
-└── social_media_data/                  # Community reports data
-```
-
-## 🧪 Demo Mode
-
-FloodVoice includes a demo mode with realistic simulated data:
-
-1. **Generate demo flood posts**
-   ```bash
-   python demo_flood_posts_generator.py
-   ```
-
-2. **Enable demo mode in `.env`**
-   ```
-   DEMO_MODE=True
-   USE_MOCK_DATA=True
-   ```
-
-3. **Run the application**
-   - Dashboard will show simulated flood event in Astoria, Queens
-   - Community reports correlate with sensor readings
-   - AI generates insights based on demo scenario
-
-## 🔌 Partner API
-
-FloodVoice provides a REST API for partner calling systems:
-
-### Trigger Wellness Checks
-```bash
-POST /api/trigger-wellness-checks
-Content-Type: application/json
-
-{
-  "flood_event_id": "flood_2025_11_08_001",
-  "affected_zipcodes": ["11101", "11102"],
-  "severity": "moderate"
-}
-```
-
-### Receive Call Results
-```bash
-POST /api/wellness-check-result
-Content-Type: application/json
-
-{
-  "campaign_id": "wc_2025_11_08_001",
-  "resident_id": "12345",
-  "status": "completed",
-  "notes": "Resident is safe, no assistance needed"
-}
-```
-
-## 📈 Success Metrics
-
-- **Response Time**: Reduce time from flood detection to wellness check initiation by 70%
-- **Coverage**: Enable wellness checks for 500+ vulnerable residents per flood event
-- **Correlation Accuracy**: 85%+ match rate between sensor data and community reports
-- **User Adoption**: 10+ community organizations using platform within 3 months
-
-## 🤝 Contributing
-
-We welcome contributions from the community! Please see our contributing guidelines.
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is developed for the NYC Pandemic Response Institute Data Team.
-
-## 📞 Contact
-
-**Developer**: Erica Rodriguez  
-**Email**: erica.ro@pursuit.org  
-**Organization**: NYC Pandemic Response Institute
-
-## 🙏 Acknowledgments
-
-- **NYC FloodNet**: Real-time flood sensor data
-- **NYC DOHMH**: Flood Vulnerability Index data
-- **FEMA**: Flood risk zone data
-- **NYC Pandemic Response Institute**: Project support and funding
+   Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 ---
 
-**Built with ❤️ for vulnerable communities facing climate emergencies.**
+## 📂 Project Structure
 
-**Demo Date**: December 9, 2025 | NYC Pandemic Response Institute Data Team Meeting
+```
+src/
+├── app/
+│   ├── api/            # Next.js API Routes (Analytics, Vapi, Cron)
+│   ├── dashboard/      # Main Dashboard Interfaces
+│   │   ├── calls/      # Liaison Live Feed
+│   │   ├── layout.tsx  # Sidebar & Layout
+│   │   └── page.tsx    # Director Command Center
+│   └── page.tsx        # Landing Page
+├── components/
+│   ├── analytics/      # Charts & Data Widgets
+│   ├── floodnet-graph/ # Sensor Data Visualization
+│   └── ui/             # Reusable UI Components
+└── lib/                # Utilities & Supabase Client
+```
 
+---
+
+## 🔮 Future Roadmap (Phase 7)
+
+- **Organization Support**: Multi-tenant architecture for different CBOs.
+- **Role-Based Access Control**: Strict data separation between Liaisons and Coordinators.
+- **Coordinator Dashboard**: Cross-liaison aggregated views.

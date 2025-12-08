@@ -1,68 +1,41 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Virtual environments
-venv/
-env/
-ENV/
-.venv/
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Environment variables (NEVER COMMIT THESE!)
-.env
-.env.local
-.env.production
-*.env
+# testing
+/coverage
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# next.js
+/.next/
+/out/
 
-# OS
+# production
+/build
+
+# misc
 .DS_Store
-Thumbs.db
+*.pem
 
-# Database files (too large for GitHub, recreated on deployment)
-*.db
-*.sqlite
-*.sqlite3
-*.db-shm
-*.db-wal
-*.db-journal
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# Logs
-*.log
+# env files (can opt-in for committing if needed)
+.env*
 
-# Temporary files
-*.tmp
-*.temp
+# vercel
+.vercel
 
-# Data files that are too large or sensitive (uncomment if needed)
-# *.csv
-# *.json
-
-# Large analysis result files
-pattern_analysis_results.csv
-*_analysis_results.csv
+# typescript
+*.tsbuildinfo
+next-env.d.ts
