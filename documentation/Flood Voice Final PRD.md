@@ -131,6 +131,7 @@ Once activated, the system triggers simultaneous outbound calls to all subscribe
 
 ## **Appendix**
 
+<<<<<<< HEAD
 ### **Tech Stack (Production Build)**
 
 **Frontend:**
@@ -289,4 +290,40 @@ Once activated, the system triggers simultaneous outbound calls to all subscribe
 │         Includes: resident name, audio link, transcript      │
 └─────────────────────────────────────────────────────────────┘
 ```
+=======
+* **Tech Stack:** React (Frontend), Node.js (Backend), Twilio Programmable Voice (Telephony), OpenAI Whisper (Transcription), Supabase (Database).  
+* **Regulatory Reference (MVP Strategy):** For the pilot, we rely on **"Prior Express Consent"** obtained verbally by the Liaison. The Liaison assumes responsibility for this consent via the checkbox attestation in Journey 1\.  
+* **Data Privacy:** All voice recordings are encrypted at rest and accessible only to the registered Liaison.  
+* **CBO:** A Community-Based Organization (CBO) is typically a non-profit entity that operates within a specific community or geographical area.  
+* **FloodNet NYC:** Our data dashboard was developed in partnership with FieldKit. The main page features a map view, allowing users to view all flood sensor readings in real time. Clicking on a sensor icon directs users to a data view page, where users can interact with historic time series data from a specific sensor.
+
+# Integrated FloodVoice System Architecture
+
+# Two-Layer System Design
+
+   LAYER 1: MONITORING DASHBOARD                
+  (FloodNet Sensors \+ Real-Time Detection)             
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            
+│        Live Map  			  Sensor        			Flood       
+│       (FloodNet)  		 	 Readings    			  Alerts        
+│  └──────────────┘  └──────────────┘  └──────────────┘            
+│   Monitors: 50+ sensors across NYC                                 
+│  Detects: Flood depth \> threshold in vulnerable zones            
+│  Triggers: Alert to CBO coordinators & liaisons                  
+└───────────────────────────────────────────────────────────  
+                              ↓  
+                    FLOOD DETECTED IN ZONE  
+                              ↓  
+    LAYER 2: RESPONSE DASHBOARD                      
+│              (Liaison Pod Management \+ Voice Calls)             
+│                                                                  
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            
+│ 	  Liaison     	 		 Manual     	  	 Call Status  
+│  	  Alert       			 Trigger     		 Dashboard               
+│  └──────────────┘  └──────────────┘  └──────────────┘          
+│  Notifies: Liaisons in affected ZIP codes                         
+│  Activates: Liaison clicks "Start Emergency Check-in"          
+│  Executes: Batch voice calls to vulnerable residents              
+└───────────────────────────────────────────────────────────
+>>>>>>> josue/main
 
