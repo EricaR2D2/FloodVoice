@@ -51,6 +51,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Nested repo — kept locally for reference only
+flood-voice-new/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

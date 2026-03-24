@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { RefreshCw, MapPin, Waves, Search, Filter } from 'lucide-react';
+import { RefreshCw, MapPin, Waves, Search, Filter, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFlooding } from '@/contexts/flooding-context';
 
@@ -312,6 +312,18 @@ export function FloodMap({ className }: { className?: string }) {
                         </span>
                     )}
                 </button>
+
+                {/* FloodNet Full Dashboard Link */}
+                <a
+                    href="https://dataviz.floodnet.nyc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 px-2 py-1 text-xs text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-400/50 rounded transition-all bg-blue-500/5 hover:bg-blue-500/10"
+                    title="Open full FloodNet dashboard"
+                >
+                    <ExternalLink className="w-3 h-3" />
+                    Full Dashboard
+                </a>
 
                 {/* Refresh Button */}
                 <button

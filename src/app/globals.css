@@ -216,3 +216,85 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* ============================================================
+   LIGHT MODE THEME OVERRIDES
+   Applied when <html> has class="light"
+   ============================================================ */
+.light {
+  /* Core palette — sky + white with high contrast */
+  --bg-primary: #f0f5fb;
+  --bg-secondary: #e2eaf4;
+  --bg-glass: rgba(255, 255, 255, 0.88);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --card-border: rgba(15, 23, 42, 0.09);
+  --accent-primary: #0284c7;
+  --accent-glow: rgba(2, 132, 199, 0.25);
+}
+
+/* Body background + text */
+.light body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Glass panels become white cards */
+.light .glass-panel {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.06);
+}
+
+/* ---- Text overrides ---- */
+.light .text-white        { color: #0f172a !important; }
+.light .text-slate-100    { color: #1e293b !important; }
+.light .text-slate-200    { color: #1e293b !important; }
+.light .text-slate-300    { color: #334155 !important; }
+.light .text-slate-400    { color: #475569 !important; }
+.light .text-slate-500    { color: #64748b !important; }
+
+/* Headings that use inline text-white */
+.light h1, .light h2, .light h3 { color: #0f172a; }
+
+/* ---- Background overrides — dark glass cards/buttons ---- */
+.light [class*="bg-slate-800"],
+.light [class*="bg-slate-900"],
+.light [class*="bg-slate-700"] {
+  background-color: rgba(226, 234, 244, 0.7) !important;
+}
+
+/* Dark-on-dark borders → light borders */
+.light [class*="border-white\/"] {
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* ---- Inputs ---- */
+.light input[type="text"],
+.light input[type="search"],
+.light input[type="email"],
+.light textarea {
+  background: rgba(240, 245, 251, 0.9) !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+}
+.light input::placeholder { color: #94a3b8 !important; }
+
+/* ---- Buttons — ghost/dark hover variants ---- */
+.light .hover\:bg-white\/5:hover  { background-color: rgba(15, 23, 42, 0.04) !important; }
+.light .hover\:bg-white\/10:hover { background-color: rgba(15, 23, 42, 0.06) !important; }
+
+/* ---- Sidebar ---- */
+.light aside {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* ---- Scrollbar ---- */
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.2);
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.35);
+}

@@ -348,7 +348,7 @@ export default function ResidentsPage() {
                                     </div>
                                 )}
                                 {resident.health_conditions && (
-                                    <div className="flex items-start gap-2 text-xs text-yellow-500/90 bg-yellow-500/5 p-2 rounded mt-2">
+                                    <div className="flex items-start gap-2 text-xs text-orange-500 bg-orange-500/10 p-2 rounded mt-2">
                                         <Activity className="w-4 h-4 mt-0.5 shrink-0" />
                                         <span>{resident.health_conditions}</span>
                                     </div>

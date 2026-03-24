@@ -3,18 +3,20 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Activity, Settings, LogOut, Phone } from 'lucide-react';
-import { cn } from '@/lib/utils'; // Assuming you have this utility or use simple string concat
+import { LayoutDashboard, Users, Brain, Settings, LogOut, Phone, Sun, Moon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { FloodingProvider } from '@/contexts/flooding-context';
+import { useTheme } from '@/contexts/theme-context';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
     const pathname = usePathname();
+    const { theme, toggleTheme } = useTheme();
 
     const navItems = [
         { name: 'Command Center', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Live Calls', href: '/dashboard/calls', icon: Phone },
         { name: 'Residents Pod', href: '/dashboard/residents', icon: Users },
-        { name: 'FloodNet Map', href: '/dashboard/map', icon: Activity },
+        { name: 'Flood Intelligence', href: '/dashboard/intelligence', icon: Brain },
         { name: 'Settings', href: '/dashboard/settings', icon: Settings },
     ];
 
@@ -54,9 +56,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         })}
                     </nav>
 
-                    {/* User Profile / Logout */}
-                    <div className="p-4 border-t border-white/5">
-                        <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-slate-400 hover:text-red-400 transition-colors">
+                    {/* Theme toggle + Sign Out */}
+                    <div className="p-4 border-t border-white/5 space-y-1">
+                        <button
+                            onClick={toggleTheme}
+                            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                            className="flex items-center gap-3 w-full px-4 py-3 text-sm text-slate-400 hover:text-blue-400 transition-colors rounded-lg hover:bg-white/5"
+                        >
+                            {theme === 'dark' ? (
+                                <Sun className="w-5 h-5" />
+                            ) : (
+                                <Moon className="w-5 h-5" />
+                            )}
+                            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                        </button>
+                        <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-slate-400 hover:text-red-400 transition-colors rounded-lg hover:bg-white/5">
                             <LogOut className="w-5 h-5" />
                             Sign Out
                         </button>
