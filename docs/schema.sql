@@ -28,13 +28,19 @@ create table public.residents (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Create Logs table
+-- Create Logs table (includes all migration columns — recording_url, transcript, tags, sentiment_score, key_topics, processed_at)
 create table public.call_logs (
   id uuid default gen_random_uuid() primary key,
   resident_id uuid references public.residents(id) on delete cascade not null,
   vapi_call_id text,
   summary text,
   risk_label text,
+  recording_url text,
+  transcript text,
+  tags text[] default '{}',
+  sentiment_score integer check (sentiment_score >= 1 and sentiment_score <= 10),
+  key_topics text,
+  processed_at timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -51,3 +57,4 @@ create policy "MVP Public Update" on public.residents for update using (true);
 
 create policy "MVP Public View Logs" on public.call_logs for select using (true);
 create policy "MVP Public Insert Logs" on public.call_logs for insert with check (true);
+create policy "MVP Public Update Logs" on public.call_logs for update using (true);
