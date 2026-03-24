@@ -288,8 +288,18 @@ export function FloodNetGraph({ className }: { className?: string }) {
                 )}
 
                 {error ? (
-                    <div className="absolute inset-0 flex items-center justify-center text-red-400 text-sm">
-                        {error}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-4">
+                        <Droplets className="w-7 h-7 text-slate-600" />
+                        <p className="text-sm font-medium text-slate-400">Sensor data unavailable</p>
+                        <p className="text-xs text-slate-500">
+                            The FloodNet API is temporarily unreachable. Data will auto-refresh.
+                        </p>
+                        <button
+                            onClick={() => fetchData(selectedSensor, timeRange)}
+                            className="text-xs text-blue-400 hover:text-blue-300 underline transition-colors"
+                        >
+                            Try again
+                        </button>
                     </div>
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">

@@ -7,8 +7,9 @@ import { RefreshCw, MapPin, Waves, Search, Filter, ExternalLink } from 'lucide-r
 import { cn } from '@/lib/utils';
 import { useFlooding } from '@/contexts/flooding-context';
 
-// Set the Mapbox access token
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
+// Set the Mapbox access token (validated below before use)
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
+const TOKEN_VALID = MAPBOX_TOKEN.startsWith('pk.');
 
 interface Sensor {
     deployment_id: string;
@@ -105,8 +106,9 @@ export function FloodMap({ className }: { className?: string }) {
 
     // Initialize map
     useEffect(() => {
-        if (!mapContainer.current || map.current) return;
+        if (!mapContainer.current || map.current || !TOKEN_VALID) return;
 
+        mapboxgl.accessToken = MAPBOX_TOKEN;
         map.current = new mapboxgl.Map({
             container: mapContainer.current,
             style: 'mapbox://styles/mapbox/dark-v11',
@@ -347,8 +349,21 @@ export function FloodMap({ className }: { className?: string }) {
                     style={{ width: '100%', height: '100%' }}
                 />
 
+                {/* No token overlay */}
+                {!TOKEN_VALID && (
+                    <div className="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center z-10 gap-3 text-center px-6">
+                        <MapPin className="w-8 h-8 text-slate-500" />
+                        <p className="text-sm font-medium text-slate-300">Map unavailable</p>
+                        <p className="text-xs text-slate-500 max-w-xs">
+                            Add your Mapbox token to <code className="text-blue-400">.env.local</code> as{' '}
+                            <code className="text-blue-400">NEXT_PUBLIC_MAPBOX_TOKEN</code>. Free tokens at{' '}
+                            <a href="https://account.mapbox.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">mapbox.com</a>.
+                        </p>
+                    </div>
+                )}
+
                 {/* Loading overlay */}
-                {isLoading && !mapLoaded && (
+                {TOKEN_VALID && isLoading && !mapLoaded && (
                     <div className="absolute inset-0 bg-slate-900/80 flex items-center justify-center z-10">
                         <span className="text-sm text-blue-400">Loading map...</span>
                     </div>

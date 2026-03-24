@@ -30,8 +30,14 @@ export async function GET() {
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error('Error fetching call logs:', error);
-            return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });
+            // Table may not exist yet — return empty valid shape so the UI shows "No data"
+            console.warn('Analytics priority: Supabase query failed (table may not exist yet):', error.message);
+            return NextResponse.json({
+                urgencyBreakdown: { critical: 0, elevated: 0, moderate: 0, stable: 0 },
+                topPriority: [],
+                tagDistribution: [],
+                summary: { totalCalls: 0, analyzedCalls: 0, avgScore: 0 }
+            });
         }
 
         // Calculate urgency breakdown
@@ -105,6 +111,11 @@ export async function GET() {
 
     } catch (err) {
         console.error('Analytics priority error:', err);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({
+            urgencyBreakdown: { critical: 0, elevated: 0, moderate: 0, stable: 0 },
+            topPriority: [],
+            tagDistribution: [],
+            summary: { totalCalls: 0, analyzedCalls: 0, avgScore: 0 }
+        });
     }
 }

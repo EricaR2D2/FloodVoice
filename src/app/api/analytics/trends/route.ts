@@ -16,8 +16,13 @@ export async function GET() {
             .order('created_at', { ascending: true });
 
         if (error) {
-            console.error('Error fetching trends:', error);
-            return NextResponse.json({ error: 'Failed to fetch trends' }, { status: 500 });
+            // Table may not exist yet — return empty valid shape so the UI shows "No data"
+            console.warn('Analytics trends: Supabase query failed (table may not exist yet):', error.message);
+            return NextResponse.json({
+                weeklyTrend: [],
+                insight: 'No call data yet — start making calls to see trends.',
+                summary: { totalWeeks: 0, totalCalls: 0 }
+            });
         }
 
         // Group by week
@@ -84,7 +89,11 @@ export async function GET() {
 
     } catch (err) {
         console.error('Analytics trends error:', err);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({
+            weeklyTrend: [],
+            insight: 'No call data yet — start making calls to see trends.',
+            summary: { totalWeeks: 0, totalCalls: 0 }
+        });
     }
 }
 
