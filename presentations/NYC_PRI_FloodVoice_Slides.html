@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloodVoice: From Voices to Values - NYC PRI Presentation</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/white.css">
+    <style>
+        :root { --r-heading-color: #1a365d; --r-main-color: #2d3748; }
+        .reveal h1, .reveal h2 { color: #1a365d; }
+        .reveal h3 { color: #2b6cb0; }
+        .reveal .slides { text-align: left; }
+        .reveal .slides section { padding: 20px; }
+        .stat-box { background: #ebf8ff; border-left: 4px solid #3182ce; padding: 15px; margin: 10px 0; }
+        .danger-box { background: #fed7d7; border-left: 4px solid #c53030; padding: 15px; margin: 10px 0; }
+        .success-box { background: #c6f6d5; border-left: 4px solid #38a169; padding: 15px; margin: 10px 0; }
+        .two-col { display: flex; gap: 30px; }
+        .two-col > div { flex: 1; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
+        th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+        th { background: #edf2f7; }
+        .flow-diagram { background: #f7fafc; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.7em; }
+        .speaker-notes { display: none; }
+        code { background: #edf2f7; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
+        .title-slide h1 { font-size: 2.2em !important; }
+        .title-slide h2 { font-size: 1.2em !important; color: #4a5568 !important; }
+        ul { margin-left: 0; padding-left: 1.2em; }
+        li { margin-bottom: 0.5em; }
+    </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- SLIDE 1: Title -->
+<section class="title-slide" data-background-color="#1a365d">
+    <h1 style="color: white;">FloodVoice</h1>
+    <h2 style="color: #90cdf4 !important;">From Voices to Values</h2>
+    <p style="color: #e2e8f0; margin-top: 40px;">Transforming Qualitative Community Narratives into<br>Actionable Public Health Intelligence</p>
+    <hr style="border-color: #4299e1; width: 200px; margin: 30px auto;">
+    <p style="color: #a0aec0; font-size: 0.7em;">NYC PRI Data Collection, Sharing & Translation Y3Q1 Meeting<br>December 9, 2025</p>
+    <p style="color: #a0aec0; font-size: 0.6em; margin-top: 20px;">Team: Jessenia • Ethan • Erica • Josue • Kelvin • Shanell</p>
+</section>
+
+<!-- SLIDE 2: The Problem -->
+<section>
+    <h2>🚨 The Problem</h2>
+    <h3>"During Floods, Vulnerable New Yorkers Are Invisible"</h3>
+    <div class="two-col">
+        <div>
+            <div class="stat-box">
+                <strong>Who is affected:</strong>
+                <ul>
+                    <li><strong>50,000-100,000</strong> basement apartment residents</li>
+                    <li><strong>15%</strong> of NYC aged 65+ (digital divide)</li>
+                    <li>Non-English speakers, residents with disabilities</li>
+                </ul>
+            </div>
+        </div>
+        <div>
+            <div class="danger-box">
+                <strong>Hurricane Ida (2021):</strong>
+                <ul>
+                    <li><strong>11 deaths</strong> in NYC</li>
+                    <li><strong>10,000+ calls/hour</strong> overwhelmed 911</li>
+                    <li>Text alerts failed vulnerable populations</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <aside class="notes">
+        Emphasize the human cost. Ida exposed critical gaps in our emergency response infrastructure.
+        The fundamental problem: responders can't distinguish life-threatening from non-urgent when overwhelmed.
+    </aside>
+</section>
+
+<!-- SLIDE 3: The Core Challenge -->
+<section>
+    <h2>🎯 The Core Challenge</h2>
+    <h3>Emergency responders cannot distinguish between:</h3>
+    <div class="two-col" style="margin-top: 30px;">
+        <div class="danger-box" style="text-align: center;">
+            <h3>🔴 LIFE-THREATENING</h3>
+            <p><em>"Trapped in basement, water at my waist"</em></p>
+            <p><strong>Requires immediate rescue</strong></p>
+        </div>
+        <div class="success-box" style="text-align: center;">
+            <h3>🟢 NON-URGENT</h3>
+            <p><em>"Street is flooded, I'm safe upstairs"</em></p>
+            <p><strong>Can wait</strong></p>
+        </div>
+    </div>
+    <div class="stat-box" style="margin-top: 30px; text-align: center;">
+        <strong>Result:</strong> Undifferentiated qualitative data → Preventable delays → <span style="color: #c53030;">Loss of life</span>
+    </div>
+</section>
+
+<!-- SLIDE 4: The Solution -->
+<section>
+    <h2>💡 The Solution: FloodVoice</h2>
+    <h3>AI-Powered Community Triage</h3>
+    <div class="stat-box">
+        <strong>One-Line Description:</strong><br>
+        An automated voice-based welfare check system that converts <strong>thousands of qualitative phone conversations</strong> 
+        into a <strong>structured, prioritized emergency response dataset</strong> in real-time.
+    </div>
+    <div class="flow-diagram" style="margin-top: 20px; text-align: center;">
+        FLOOD DETECTED → LIAISONS ALERTED → AI CALLS RESIDENTS → NARRATIVES ANALYZED → TRIAGE DASHBOARD<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+        FloodNet Sensors → Telegram Alert → Voice AI Welfare → Gemini AI NLP → Priority Queue<br>
+        &nbsp;&nbsp;(>4" depth)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to CBO Staff&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Check Calls&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sentiment Tags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for Responders
+    </div>
+</section>
+
+<!-- SLIDE 5: Three Key Innovations -->
+<section>
+    <h2>🚀 Three Key Innovations</h2>
+    <div style="margin-top: 30px;">
+        <div class="stat-box">
+            <h3>1. Zero-Friction Access</h3>
+            <p>No app required—works with <strong>any phone</strong> (landline or cell)</p>
+        </div>
+        <div class="stat-box">
+            <h3>2. Massive Scale</h3>
+            <p>1 liaison can check <strong>500 residents in 60 seconds</strong> (vs. 10/hour manually)</p>
+        </div>
+        <div class="stat-box">
+            <h3>3. Narrative-to-Numbers</h3>
+            <p>AI extracts <strong>sentiment, urgency, and specific needs</strong> from natural speech</p>
+        </div>
+    </div>
+</section>
+
+<!-- SLIDE 6: Data Sources -->
+<section>
+    <h2>📊 Data Sources & Types</h2>
+    <table>
+        <tr><th>Data Source</th><th>Data Type</th><th>Qual/Quant</th><th>Purpose</th></tr>
+        <tr><td><strong>FloodNet NYC Sensors</strong></td><td>Numeric (depth)</td><td>Quantitative</td><td>Flood detection trigger</td></tr>
+        <tr><td><strong>Voice Call Audio</strong></td><td>Audio (WAV)</td><td><strong style="color:#c53030;">Qualitative</strong></td><td>Raw resident narratives</td></tr>
+        <tr><td><strong>Call Transcripts</strong></td><td>Text</td><td><strong style="color:#c53030;">Qualitative</strong></td><td>Spoken words → text</td></tr>
+        <tr><td><strong>Resident Profiles</strong></td><td>Structured</td><td>Quantitative</td><td>Vulnerability context</td></tr>
+        <tr><td><strong>AI Sentiment Scores</strong></td><td>Numeric (1-10)</td><td>Quantitative</td><td>Urgency classification</td></tr>
+        <tr><td><strong>Need Tags</strong></td><td>Categorical</td><td>Quantitative</td><td>Medical, Evacuation, etc.</td></tr>
+    </table>
+</section>
+
+<!-- SLIDE 7: Qualitative to Quantitative Transformation -->
+<section>
+    <h2>🔄 The Transformation</h2>
+    <h3>Qualitative → Quantitative</h3>
+    <div class="danger-box">
+        <strong>INPUT (Qualitative - Raw Voice):</strong><br>
+        <em>"I'm okay, but... the water is coming into my basement. It's about ankle-deep now. I moved my things upstairs."</em>
+    </div>
+    <div style="text-align: center; font-size: 2em; margin: 15px 0;">⬇️</div>
+    <div class="success-box">
+        <strong>OUTPUT (Quantitative - Structured Data):</strong>
+        <pre style="background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 6px; font-size: 0.7em; margin-top: 10px;">
+{
+  "sentiment_score": 4,
+  "tags": ["Property Damage", "Safe"],
+  "key_topics": "Basement flooding ankle-deep, relocated belongings",
+  "risk_label": "MODERATE"
+}</pre>
+    </div>
+</section>
+
+<!-- SLIDE 8: Implementation - Voice AI -->
+<section>
+    <h2>🛠️ Implementation: Voice AI</h2>
+    <h3>How spoken words become structured data</h3>
+    <div class="two-col">
+        <div>
+            <div class="stat-box">
+                <strong>Technology Stack:</strong>
+                <ul>
+                    <li><strong>Vapi.ai</strong> - Outbound call platform</li>
+                    <li><strong>GPT-4o-mini</strong> - Conversational AI</li>
+                    <li><strong>ElevenLabs</strong> - Voice synthesis</li>
+                    <li><strong>Real-time transcription</strong></li>
+                </ul>
+            </div>
+        </div>
+        <div>
+            <div class="flow-diagram">
+                <strong>Conversation Flow:</strong><br><br>
+                1. SAFETY: "Are you in danger?"<br>
+                &nbsp;&nbsp;→ If YES: Call 911, report distress<br><br>
+                2. INVESTIGATE: "Is there flooding?"<br>
+                &nbsp;&nbsp;→ "How deep is the water?"<br><br>
+                3. CLOSE: "I've updated your status."
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SLIDE 9: Implementation - NLP -->
+<section>
+    <h2>🧠 Implementation: NLP Analysis</h2>
+    <h3>Google Gemini AI Sentiment Classification</h3>
+    <div class="two-col">
+        <div>
+            <div class="stat-box">
+                <strong>Sentiment Scoring (1-10):</strong>
+                <ul>
+                    <li><span style="color:#38a169;">1-3:</span> Calm, safe</li>
+                    <li><span style="color:#d69e2e;">4-6:</span> Concerned, mild needs</li>
+                    <li><span style="color:#dd6b20;">7-8:</span> Distressed, urgent</li>
+                    <li><span style="color:#c53030;">9-10:</span> Panic, life-threatening</li>
+                </ul>
+            </div>
+        </div>
+        <div>
+            <div class="stat-box">
+                <strong>Fixed Taxonomy (7 Tags):</strong>
+                <ul>
+                    <li>Medical</li>
+                    <li>Food/Water</li>
+                    <li>Power</li>
+                    <li>Evacuation</li>
+                    <li>Mental Health</li>
+                    <li>Property Damage</li>
+                    <li>Safe</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <p style="margin-top: 20px; font-size: 0.8em;"><strong>Model Fallback Chain:</strong> <code>gemini-2.5-flash-lite → gemini-2.5-flash → gemini-2.0-flash-lite → gemini-2.0-flash</code></p>
+</section>
+
+<!-- SLIDE 10: Dashboard Visualization -->
+<section>
+    <h2>📈 Data Visualization</h2>
+    <h3>Real-Time Decision Support Dashboard</h3>
+    <table>
+        <tr><th>Component</th><th>Data Shown</th><th>Decision Impact</th></tr>
+        <tr><td><strong>Urgency Breakdown</strong></td><td>Critical/Elevated/Moderate/Safe</td><td>Resource allocation</td></tr>
+        <tr><td><strong>Tag Distribution</strong></td><td>Medical, Evacuation, Power counts</td><td>Specialist dispatch</td></tr>
+        <tr><td><strong>Priority Queue</strong></td><td>Sorted by sentiment score</td><td>Who to call first</td></tr>
+        <tr><td><strong>FloodNet Map</strong></td><td>Sensor locations + levels</td><td>Geographic targeting</td></tr>
+        <tr><td><strong>Audio Playback</strong></td><td>Original recordings</td><td>QA verification</td></tr>
+    </table>
+    <div class="success-box" style="margin-top: 20px;">
+        <strong>Key Feature:</strong> Liaisons can click to play original recording—captures tone, crying, confusion that text cannot.
+    </div>
+</section>
+
+<!-- SLIDE 11: Evaluation -->
+<section>
+    <h2>📏 Evaluation & Improvement</h2>
+    <div class="two-col">
+        <div>
+            <h3>Success Metrics</h3>
+            <table>
+                <tr><th>Metric</th><th>Target</th></tr>
+                <tr><td>AI Classification Accuracy</td><td><strong>90%</strong></td></tr>
+                <tr><td>Call Connection Rate</td><td><strong>95%</strong></td></tr>
+                <tr><td>Time-to-Dashboard</td><td><strong>&lt;10 sec</strong></td></tr>
+                <tr><td>False Positive Rate</td><td><strong>&lt;10%</strong></td></tr>
+            </table>
+        </div>
+        <div>
+            <h3>Improvement Approaches</h3>
+            <div class="stat-box">
+                <ul>
+                    <li><strong>Human-in-the-Loop:</strong> Override button for liaisons</li>
+                    <li><strong>A/B Testing:</strong> Compare prompt variations</li>
+                    <li><strong>Multi-Language:</strong> Spanish voice agent next</li>
+                    <li><strong>Voice Tone Analysis:</strong> Pitch, tremor detection</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SLIDE 12: Partnerships -->
+<section>
+    <h2>🤝 Partnerships & Sustainability</h2>
+    <div class="two-col">
+        <div>
+            <h3>Current Partners ✅</h3>
+            <div class="success-box">
+                <ul>
+                    <li><strong>Vapi.ai</strong> - Voice AI platform</li>
+                    <li><strong>FloodNet NYC</strong> - Sensor data</li>
+                    <li><strong>Supabase</strong> - Database & real-time</li>
+                </ul>
+            </div>
+        </div>
+        <div>
+            <h3>Needed Partners 🔄</h3>
+            <div class="stat-box">
+                <ul>
+                    <li><strong>NYC Emergency Management</strong></li>
+                    <li><strong>CBOs</strong> (50 target organizations)</li>
+                    <li><strong>NYC Dept for Aging</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="stat-box" style="margin-top: 20px;">
+        <strong>Resource Requirements:</strong><br>
+        Pilot (500 residents): ~$5,000/month &nbsp;|&nbsp; Citywide (60,000): ~$250,000/year
+    </div>
+</section>
+
+<!-- SLIDE 13: Conclusion -->
+<section>
+    <h2>🎯 The Transformation</h2>
+    <table style="font-size: 0.9em;">
+        <tr><th>Before FloodVoice</th><th>After FloodVoice</th></tr>
+        <tr><td>Vulnerable residents invisible</td><td style="color:#38a169;"><strong>Every resident has a voice</strong></td></tr>
+        <tr><td>10,000 undifferentiated calls</td><td style="color:#38a169;"><strong>AI-structured priority queue</strong></td></tr>
+        <tr><td>Qualitative narratives lost</td><td style="color:#38a169;"><strong>Quantified, tagged, actionable</strong></td></tr>
+        <tr><td>Responders overwhelmed</td><td style="color:#38a169;"><strong>Focus on life-threatening first</strong></td></tr>
+    </table>
+</section>
+
+<!-- SLIDE 14: Call to Action -->
+<section data-background-color="#1a365d">
+    <h2 style="color: white;">Our Ask</h2>
+    <div style="color: #e2e8f0; font-size: 1.2em; margin-top: 40px;">
+        <p>1. <strong>Validate</strong> our evaluation framework with PRI's expertise</p>
+        <p>2. <strong>Connect us</strong> with NYC Emergency Management & DOHMH</p>
+        <p>3. <strong>Collaborate</strong> on pilot study design</p>
+    </div>
+    <hr style="border-color: #4299e1; width: 200px; margin: 40px auto;">
+    <p style="color: #a0aec0; font-size: 0.8em;">
+        <strong>Team:</strong> Jessenia • Ethan • Erica • Josue • Kelvin • Shanell<br>
+        <strong>Email:</strong> erica.ro@pursuit.org<br>
+        <strong>Repo:</strong> github.com/Josuevillalona/flood-voice
+    </p>
+    <p style="color: #90cdf4; margin-top: 30px; font-style: italic;">"Because every voice matters in an emergency."</p>
+</section>
+
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.js"></script>
+<script>
+    Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        showNotes: false,
+        transition: 'slide'
+    });
+</script>
+</body>
+</html>
+

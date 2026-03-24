@@ -161,7 +161,24 @@
                 <small><i class="fas fa-sync-alt"></i> Auto-refreshing every 30 seconds</small>
             </p>
         </div>
-        
+        <!-- Resident Alert List -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="metric-card">
+                    <h4 class="mb-3">
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                        Resident Alerts — Most Urgent First
+                    </h4>
+                    <div id="resident-alerts">
+                        <div class="loading-spinner">
+                            <div class="spinner-border text-danger" role="status">
+                                <span class="visually-hidden">Loading residents...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Summary Metrics -->
         <div class="row mb-4">
             <div class="col-md-3">
@@ -287,7 +304,7 @@
             initializeMap();
             initializeDefaultChart();
             loadFloodData();
-
+        loadResidents();
             // Refresh data every 30 seconds
             setInterval(loadFloodData, 30000);
         });
@@ -619,6 +636,50 @@
                 `);
             });
         }
+     function loadResidents() {
+            fetch('/api/residents')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayResidents(data.residents);
+                    }
+                });
+        }
+
+        function displayResidents(residents) {
+            const container = document.getElementById('resident-alerts');
+            let html = '<div class="table-responsive"><table class="table table-hover">';
+            html += `<thead><tr>
+                <th>Urgency</th>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Borough</th>
+                <th>Language</th>
+                <th>Mobility</th>
+                <th>Status</th>
+                <th>Last Called</th>
+            </tr></thead><tbody>`;
+
+            residents.forEach(r => {
+                const urgencyColor = r.urgency_score >= 8 ? 'danger' :
+                                     r.urgency_score >= 6 ? 'warning' : 'success';
+                const statusColor = r.status === 'NEEDS_HELP' ? 'danger' :
+                                    r.status === 'NO_ANSWER' ? 'warning' : 'success';
+                html += `<tr>
+                    <td><span class="badge bg-${urgencyColor}">${r.urgency_score}/10</span></td>
+                    <td><strong>${r.name}</strong></td>
+                    <td>${r.address}</td>
+                    <td>${r.borough}</td>
+                    <td>${r.language}</td>
+                    <td>${r.mobility}</td>
+                    <td><span class="badge bg-${statusColor}">${r.status.replace('_', ' ')}</span></td>
+                    <td>${r.last_called}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }   
     </script>
 </body>
 </html>

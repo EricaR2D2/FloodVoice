@@ -1,0 +1,677 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>FloodVoice - Product Requirements Document</title>
+        <style>
+            @page {
+                size: letter;
+                margin: 1in;
+                @bottom-right {
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-size: 9pt;
+                    color: #666;
+                }
+            }
+            
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            
+            h1 {
+                color: #1e3a8a;
+                border-bottom: 3px solid #3b82f6;
+                padding-bottom: 10px;
+                margin-top: 30px;
+                font-size: 28pt;
+                page-break-before: avoid;
+            }
+            
+            h2 {
+                color: #1e40af;
+                border-bottom: 2px solid #60a5fa;
+                padding-bottom: 8px;
+                margin-top: 25px;
+                font-size: 20pt;
+                page-break-after: avoid;
+            }
+            
+            h3 {
+                color: #1e40af;
+                margin-top: 20px;
+                font-size: 16pt;
+                page-break-after: avoid;
+            }
+            
+            h4 {
+                color: #2563eb;
+                margin-top: 15px;
+                font-size: 13pt;
+            }
+            
+            p {
+                margin: 10px 0;
+                text-align: justify;
+            }
+            
+            ul, ol {
+                margin: 10px 0;
+                padding-left: 30px;
+            }
+            
+            li {
+                margin: 5px 0;
+            }
+            
+            strong {
+                color: #1e40af;
+                font-weight: 600;
+            }
+            
+            code {
+                background-color: #f3f4f6;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-family: 'Courier New', monospace;
+                font-size: 9pt;
+            }
+            
+            pre {
+                background-color: #f3f4f6;
+                padding: 15px;
+                border-radius: 5px;
+                border-left: 4px solid #3b82f6;
+                overflow-x: auto;
+                page-break-inside: avoid;
+            }
+            
+            pre code {
+                background-color: transparent;
+                padding: 0;
+            }
+            
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                margin: 15px 0;
+                page-break-inside: avoid;
+            }
+            
+            th, td {
+                border: 1px solid #d1d5db;
+                padding: 10px;
+                text-align: left;
+            }
+            
+            th {
+                background-color: #3b82f6;
+                color: white;
+                font-weight: 600;
+            }
+            
+            tr:nth-child(even) {
+                background-color: #f9fafb;
+            }
+            
+            hr {
+                border: none;
+                border-top: 2px solid #e5e7eb;
+                margin: 30px 0;
+            }
+            
+            blockquote {
+                border-left: 4px solid #3b82f6;
+                padding-left: 20px;
+                margin: 20px 0;
+                color: #4b5563;
+                font-style: italic;
+                background-color: #f9fafb;
+                padding: 15px 20px;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+            
+            /* Header styling */
+            .document-header {
+                text-align: center;
+                margin-bottom: 40px;
+                padding: 20px;
+                background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                color: white;
+                border-radius: 8px;
+            }
+            
+            .document-header h1 {
+                color: white;
+                border: none;
+                margin: 0;
+                font-size: 32pt;
+            }
+            
+            .document-subtitle {
+                font-size: 14pt;
+                margin-top: 10px;
+                opacity: 0.9;
+            }
+        </style>
+    </head>
+    <body>
+        <p><h1>FloodVoice - Product Requirements Document (PRD)</h1></p>
+<br>
+<p><strong>Version:</strong> 1.0</p>
+<p><strong>Date:</strong> November 8, 2025</p>
+<p><strong>Demo Date:</strong> December 9, 2025</p>
+<p><strong>Development Team:</strong> Erica Rowe-Owen, Kelvin Saldana, Ethan Davey, Josue Villalona, Shanell Holback, Jessenia Cintron</p>
+<p><strong>Organization:</strong> NYC Pandemic Response Institute Data Team</p>
+<br>
+<p><hr></p>
+<br>
+<p><h2>1. Executive Summary</h2></p>
+<br>
+<p><h3>1.1 Product Vision</h3></p>
+<p>FloodVoice is a community-centered flood emergency response platform that empowers community representatives to check on vulnerable residents during flood events using SMS and automated voice calls. By combining real-time environmental monitoring data from NYC FloodNet sensors with ground-level community narratives, FloodVoice uses natural language processing (NLP) to construct dashboards that display both metrics and personal stories, enabling real-time situational awareness and more human-centered response planning.</p>
+<br>
+<p><h3>1.2 Problem Statement</h3></p>
+<p>During flood emergencies in NYC:</p>
+<ul>
+<li><strong>Vulnerable populations</strong> (elderly, disabled, non-English speakers) are often isolated and unreachable</li>
+<li><strong>Community representatives</strong> lack real-time tools to coordinate wellness checks</li>
+<li><strong>Emergency responders</strong> miss critical ground-level context from affected communities</li>
+<li><strong>Environmental data</strong> (sensor readings) exists in isolation from human impact stories</li>
+<li><strong>Response planning</strong> is reactive rather than proactive, missing early warning signals</li>
+</ul>
+<br>
+<p><h3>1.3 Solution Overview</h3></p>
+<p>FloodVoice bridges the gap between <strong>environmental data</strong> (FloodNet sensors) and <strong>human narratives</strong> (community reports, social media) to create a unified situational awareness dashboard that:</p>
+<ol>
+<li><strong>Monitors</strong> real-time flood sensor data from https://dataviz.floodnet.nyc/</li>
+<li><strong>Correlates</strong> sensor readings with community reports and social media narratives</li>
+<li><strong>Identifies</strong> vulnerable populations using NYC Flood Vulnerability Index (FVI)</li>
+<li><strong>Triggers</strong> automated wellness check campaigns via SMS/voice calls (partner integration)</li>
+<li><strong>Visualizes</strong> both quantitative metrics and qualitative narratives in a unified dashboard</li>
+</ol>
+<br>
+<p><h3>1.4 Success Metrics</h3></p>
+<ul>
+<li><strong>Response Time</strong>: Reduce time from flood detection to wellness check initiation by 70%</li>
+<li><strong>Coverage</strong>: Enable wellness checks for 500+ vulnerable residents per flood event</li>
+<li><strong>Correlation Accuracy</strong>: 85%+ match rate between sensor data and community reports</li>
+<li><strong>User Adoption</strong>: 10+ community organizations using platform within 3 months</li>
+<li><strong>Demo Impact</strong>: Secure funding/partnership commitment from NYC PRI Data Team by Dec 9</li>
+</ul>
+<br>
+<p><hr></p>
+<br>
+<p><h2>2. Target Users & Stakeholders</h2></p>
+<br>
+<p><h3>2.1 Primary Users</h3></p>
+<ol>
+<li><strong>Community Health Workers (CHWs)</strong></li>
+<li>Need: Real-time flood alerts for their service areas</li>
+<li>Use Case: Initiate wellness checks when flooding detected in vulnerable neighborhoods</li>
+<li>Pain Point: Currently rely on news reports and manual neighborhood checks</li>
+</ol>
+<br>
+<ol>
+<li><strong>Community-Based Organizations (CBOs)</strong></li>
+<li>Need: Coordinate multi-neighborhood response during flood events</li>
+<li>Use Case: Deploy resources based on real-time flood severity + vulnerability data</li>
+<li>Pain Point: Lack centralized view of flood impact across service areas</li>
+</ol>
+<br>
+<ol>
+<li><strong>Emergency Response Coordinators</strong></li>
+<li>Need: Ground-level situational awareness during flood events</li>
+<li>Use Case: Prioritize response based on sensor data + community narratives</li>
+<li>Pain Point: Official data misses human impact stories and local context</li>
+</ol>
+<br>
+<p><h3>2.2 Secondary Stakeholders</h3></p>
+<ul>
+<li><strong>NYC Pandemic Response Institute</strong>: Funding and institutional support</li>
+<li><strong>NYC FloodNet</strong>: Data provider and technical partner</li>
+<li><strong>Vulnerable Residents</strong>: Beneficiaries of wellness check system</li>
+<li><strong>Partner Developer</strong>: Building automated calling system (integration point)</li>
+</ul>
+<br>
+<p><hr></p>
+<br>
+<p><h2>3. Core Features & Requirements</h2></p>
+<br>
+<p><h3>3.1 Real-Time Flood Monitoring Dashboard</h3></p>
+<br>
+<p><h4>3.1.1 FloodNet Sensor Integration</h4></p>
+<p><strong>Priority:</strong> P0 (Must Have for Demo)</p>
+<br>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Pull real-time sensor data from https://dataviz.floodnet.nyc/ API</li>
+<li>Display sensor locations on interactive NYC map</li>
+<li>Show current flood depth readings (inches) for each sensor</li>
+<li>Color-code sensors by flood severity:</li>
+<li>🟢 Green: <2 inches (normal)</li>
+<li>🟡 Yellow: 2-6 inches (minor flooding)</li>
+<li>🟠 Orange: 6-12 inches (moderate flooding)</li>
+<li>🔴 Red: >12 inches (major flooding)</li>
+<li>Auto-refresh every 5 minutes during active flood events</li>
+<li>Historical trend view (last 24 hours) for each sensor</li>
+</ul>
+<br>
+<p><strong>Technical Specifications:</strong></p>
+<ul>
+<li>API Endpoint: FloodNet public API (to be confirmed)</li>
+<li>Update Frequency: 5-minute intervals</li>
+<li>Data Storage: SQLite database with 30-day retention</li>
+<li>Map Library: Leaflet.js with NYC basemap</li>
+</ul>
+<br>
+<p><h4>3.1.2 Flood Vulnerability Index (FVI) Overlay</h4></p>
+<p><strong>Priority:</strong> P0 (Must Have for Demo)</p>
+<br>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Display NYC DOHMH Flood Vulnerability Index by ZIP code</li>
+<li>Show vulnerability categories: LOW, MODERATE, HIGH</li>
+<li>Overlay FVI zones on flood sensor map</li>
+<li>Highlight high-vulnerability areas with active flooding</li>
+<li>Filter view by vulnerability level</li>
+</ul>
+<br>
+<p><strong>Data Source:</strong></p>
+<ul>
+<li>NYC Open Data: Flood Vulnerability Index (FVI) dataset</li>
+<li>FEMA flood risk zones (100-year, 500-year floodplains)</li>
+</ul>
+<br>
+<p><h4>3.1.3 Community Narrative Integration</h4></p>
+<p><strong>Priority:</strong> P0 (Must Have for Demo)</p>
+<br>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Ingest social media posts mentioning flooding (Twitter/X, Facebook, Nextdoor)</li>
+<li>Use NLP to extract:</li>
+<li>Location (neighborhood, street, landmark)</li>
+<li>Flood severity indicators (keywords: "waist-deep", "car flooded", "basement")</li>
+<li>Urgency level (HIGH, MODERATE, LOW)</li>
+<li>Sentiment (fear, frustration, help requests)</li>
+<li>Display community reports as map markers</li>
+<li>Correlate reports with nearby FloodNet sensors</li>
+<li>Show "Narrative-to-Numbers" correlation strength:</li>
+<li>🟢 Strong: Report within 0.5 miles of sensor showing flooding</li>
+<li>🟡 Moderate: Report within 1 mile of sensor</li>
+<li>🔴 Poor: No nearby sensor data</li>
+</ul>
+<br>
+<p><strong>NLP Pipeline:</strong></p>
+<ul>
+<li>Text processing: spaCy or NLTK for location extraction</li>
+<li>Sentiment analysis: TextBlob or VADER</li>
+<li>Urgency scoring: Custom keyword-based algorithm</li>
+<li>Geocoding: NYC GeoClient API for address resolution</li>
+</ul>
+<br>
+<p><h3>3.2 Wellness Check Trigger System</h3></p>
+<br>
+<p><h4>3.2.1 Automated Alert Generation</h4></p>
+<p><strong>Priority:</strong> P1 (Should Have for Demo)</p>
+<br>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Automatically detect flood events when:</li>
+<li>FloodNet sensor reads >6 inches for 15+ minutes</li>
+<li>Multiple community reports from same area within 1 hour</li>
+<li>High-vulnerability ZIP code shows flooding</li>
+<li>Generate alert with:</li>
+<li>Affected area (ZIP code, neighborhood)</li>
+<li>Flood severity level</li>
+<li>Number of vulnerable residents in area (from FVI data)</li>
+<li>Recommended action (initiate wellness checks)</li>
+<li>Send alert to dashboard and partner calling system API</li>
+</ul>
+<br>
+<p><strong>Alert Thresholds (Configurable):</strong></p>
+<ul>
+<li>Minor Flood: 2-6 inches, 1+ community reports</li>
+<li>Moderate Flood: 6-12 inches, 3+ community reports</li>
+<li>Major Flood: >12 inches, 5+ community reports</li>
+</ul>
+<br>
+<p><h4>3.2.2 Partner API Integration</h4></p>
+<p><strong>Priority:</strong> P1 (Should Have for Demo)</p>
+<br>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Provide REST API endpoint for partner calling system</li>
+<li>API returns:</li>
+<li>List of vulnerable residents in affected area</li>
+<li>Contact information (phone numbers)</li>
+<li>Preferred language</li>
+<li>Special needs flags (mobility, medical)</li>
+<li>Webhook to receive call results from partner system</li>
+<li>Display call status on dashboard (pending, completed, no answer, needs follow-up)</li>
+</ul>
+<br>
+<p><strong>API Specification:</strong></p>
+<p>```json</p>
+<p>POST /api/trigger-wellness-checks</p>
+<p>{</p>
+<p>  "flood_event_id": "flood_2025_11_08_001",</p>
+<p>  "affected_zipcodes": ["11101", "11102"],</p>
+<p>  "severity": "moderate",</p>
+<p>  "sensor_readings": [</p>
+<p>    {"sensor_id": "FN001", "depth_inches": 8.5, "location": "Queens Plaza"}</p>
+<p>  ],</p>
+<p>  "estimated_affected_residents": 250</p>
+<p>}</p>
+<br>
+<p>Response:</p>
+<p>{</p>
+<p>  "campaign_id": "wc_2025_11_08_001",</p>
+<p>  "residents_to_contact": 250,</p>
+<p>  "calls_initiated": 250,</p>
+<p>  "status": "in_progress"</p>
+<p>}</p>
+<p>```</p>
+<br>
+<p><h3>3.3 Dashboard Visualization</h3></p>
+<br>
+<p><h4>3.3.1 Main Dashboard View</h4></p>
+<p><strong>Priority:</strong> P0 (Must Have for Demo)</p>
+<br>
+<p><strong>Components:</strong></p>
+<ol>
+<li><strong>Live Map</strong> (60% of screen)</li>
+<li>FloodNet sensors with real-time readings</li>
+<li>Community report markers</li>
+<li>FVI vulnerability zones (choropleth overlay)</li>
+<li>FEMA flood zones (toggle layer)</li>
+</ol>
+<br>
+<ol>
+<li><strong>Metrics Panel</strong> (top bar)</li>
+<li>Active flood sensors: X/Y sensors detecting flooding</li>
+<li>Community reports (last 24h): X reports</li>
+<li>Vulnerable residents in affected areas: X people</li>
+<li>Active wellness check campaigns: X campaigns</li>
+</ol>
+<br>
+<ol>
+<li><strong>Correlation Feed</strong> (right sidebar)</li>
+<li>List of sensor-report correlations</li>
+<li>Each item shows:</li>
+<li>Community report text (truncated)</li>
+<li>Nearby sensor reading</li>
+<li>Correlation strength</li>
+<li>Time posted</li>
+<li>Click to expand full details</li>
+</ol>
+<br>
+<ol>
+<li><strong>AI Insights Panel</strong> (bottom)</li>
+<li>Auto-generated insights using GPT-3.5-turbo:</li>
+<li>"3 sensors in Astoria showing moderate flooding"</li>
+<li>"Community reports indicate basement flooding in LIC"</li>
+<li>"High-vulnerability area 11101 experiencing flooding"</li>
+<li>Recommended actions</li>
+</ol>
+<br>
+<p><h4>3.3.2 Historical Analysis View</h4></p>
+<p><strong>Priority:</strong> P2 (Nice to Have)</p>
+<br>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>View past flood events (last 30 days)</li>
+<li>Compare sensor data vs. community reports over time</li>
+<li>Analyze correlation accuracy</li>
+<li>Export data for research/reporting</li>
+</ul>
+<br>
+<p><hr></p>
+<br>
+<p><h2>4. Technical Architecture</h2></p>
+<br>
+<p><h3>4.1 Technology Stack</h3></p>
+<br>
+<p><strong>Backend:</strong></p>
+<ul>
+<li><strong>Framework:</strong> Flask (Python 3.10+)</li>
+<li><strong>Database:</strong> SQLite (development), PostgreSQL (production)</li>
+<li><strong>Real-time Updates:</strong> Flask-SocketIO (WebSockets)</li>
+<li><strong>API Integration:</strong> requests library for FloodNet API</li>
+<li><strong>NLP:</strong> spaCy, TextBlob, OpenAI GPT-3.5-turbo (via OpenRouter)</li>
+</ul>
+<br>
+<p><strong>Frontend:</strong></p>
+<ul>
+<li><strong>UI Framework:</strong> Bootstrap 5</li>
+<li><strong>Mapping:</strong> Leaflet.js with NYC basemap</li>
+<li><strong>Charts:</strong> Chart.js</li>
+<li><strong>Real-time:</strong> Socket.IO client</li>
+</ul>
+<br>
+<p><strong>Data Sources:</strong></p>
+<ul>
+<li>FloodNet API: https://dataviz.floodnet.nyc/</li>
+<li>NYC Open Data: FVI, FEMA flood zones</li>
+<li>Social Media: Twitter API, mock data for demo</li>
+</ul>
+<br>
+<p><h3>4.2 System Architecture</h3></p>
+<br>
+<p>```</p>
+<p>┌─────────────────────────────────────────────────────────────┐</p>
+<p>│                     FloodVoice Dashboard                     │</p>
+<p>│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │</p>
+<p>│  │  Live Map    │  │  Metrics     │  │ Correlations │      │</p>
+<p>│  │  (Leaflet)   │  │  Panel       │  │  Feed        │      │</p>
+<p>│  └──────────────┘  └──────────────┘  └──────────────┘      │</p>
+<p>└─────────────────────────────────────────────────────────────┘</p>
+<p>                            ▲</p>
+<p>                            │ WebSocket (real-time updates)</p>
+<p>                            ▼</p>
+<p>┌─────────────────────────────────────────────────────────────┐</p>
+<p>│                    Flask Backend (app.py)                    │</p>
+<p>│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │</p>
+<p>│  │ FloodNet     │  │ NLP Engine   │  │ Alert        │      │</p>
+<p>│  │ Poller       │  │ (spaCy/GPT)  │  │ Generator    │      │</p>
+<p>│  └──────────────┘  └──────────────┘  └──────────────┘      │</p>
+<p>└─────────────────────────────────────────────────────────────┘</p>
+<p>         │                    │                    │</p>
+<p>         ▼                    ▼                    ▼</p>
+<p>┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐</p>
+<p>│  FloodNet    │  │ Social Media │  │ Partner Calling API  │</p>
+<p>│  API         │  │ Data         │  │ (Webhook)            │</p>
+<p>└──────────────┘  └──────────────┘  └──────────────────────┘</p>
+<p>```</p>
+<br>
+<p><h3>4.3 Database Schema</h3></p>
+<br>
+<p><strong>Tables:</strong></p>
+<ol>
+<li>`flood_sensors` - FloodNet sensor locations and metadata</li>
+<li>`sensor_readings` - Time-series flood depth data</li>
+<li>`community_reports` - Social media posts and narratives</li>
+<li>`fvi_zones` - Flood Vulnerability Index by ZIP code</li>
+<li>`flood_events` - Detected flood events</li>
+<li>`wellness_campaigns` - Triggered wellness check campaigns</li>
+<li>`correlations` - Sensor-report correlation records</li>
+</ol>
+<br>
+<p><hr></p>
+<br>
+<p><h2>5. Development Roadmap</h2></p>
+<br>
+<p><h3>Phase 1: Foundation (Nov 8-15) - Week 1</h3></p>
+<ul>
+<li>✅ Set up new GitHub repository</li>
+<li>✅ Refactor codebase (remove health surveillance)</li>
+<li>✅ FloodNet API integration</li>
+<li>✅ Basic map visualization</li>
+<li>✅ FVI data ingestion</li>
+</ul>
+<br>
+<p><h3>Phase 2: Core Features (Nov 16-23) - Week 2</h3></p>
+<ul>
+<li>✅ Social media narrative ingestion</li>
+<li>✅ NLP pipeline for location/sentiment extraction</li>
+<li>✅ Sensor-report correlation algorithm</li>
+<li>✅ Real-time dashboard updates (WebSocket)</li>
+</ul>
+<br>
+<p><h3>Phase 3: Intelligence (Nov 24-30) - Week 3</h3></p>
+<ul>
+<li>✅ AI insights generation (GPT integration)</li>
+<li>✅ Alert generation system</li>
+<li>✅ Partner API development</li>
+<li>✅ Historical analysis view</li>
+</ul>
+<br>
+<p><h3>Phase 4: Polish & Demo Prep (Dec 1-8) - Week 4</h3></p>
+<ul>
+<li>✅ UI/UX refinement</li>
+<li>✅ Demo data preparation</li>
+<li>✅ Testing and bug fixes</li>
+<li>✅ Demo script and presentation</li>
+<li>✅ Documentation</li>
+</ul>
+<br>
+<p><h3>Demo Day: December 9, 2025</h3></p>
+<ul>
+<li>🎯 Present to NYC PRI Data Team</li>
+<li>🎯 Live demo with real FloodNet data</li>
+<li>🎯 Show partner integration capability</li>
+</ul>
+<br>
+<p><hr></p>
+<br>
+<p><h2>6. Demo Scenario</h2></p>
+<br>
+<p><h3>6.1 Demo Narrative</h3></p>
+<p><strong>"From Narrative to Numbers: Community-Centered Flood Response"</strong></p>
+<br>
+<p><strong>Setup:</strong></p>
+<ul>
+<li>Simulated flood event in Astoria, Queens (high FVI area)</li>
+<li>FloodNet sensors showing rising water levels</li>
+<li>Social media posts from residents reporting flooding</li>
+</ul>
+<br>
+<p><strong>Demo Flow:</strong></p>
+<ol>
+<li><strong>Show baseline</strong> - Normal conditions, all sensors green</li>
+<li><strong>Trigger flood event</strong> - Sensor readings spike to 8+ inches</li>
+<li><strong>Community reports appear</strong> - Social media posts correlate with sensor data</li>
+<li><strong>AI generates insights</strong> - "Moderate flooding detected in high-vulnerability area"</li>
+<li><strong>Alert triggers</strong> - System recommends wellness checks for 250 residents</li>
+<li><strong>Partner API called</strong> - Show API request/response</li>
+<li><strong>Dashboard updates</strong> - Real-time correlation feed and metrics</li>
+</ol>
+<br>
+<p><h3>6.2 Key Demo Talking Points</h3></p>
+<ul>
+<li><strong>Narrative-to-Numbers</strong>: Show how community stories validate sensor data</li>
+<li><strong>Equity Focus</strong>: Highlight vulnerable population prioritization</li>
+<li><strong>Real-time Response</strong>: Demonstrate speed from detection to action</li>
+<li><strong>Human-Centered</strong>: Emphasize community voices in emergency response</li>
+<li><strong>Scalability</strong>: Discuss expansion to other NYC neighborhoods</li>
+</ul>
+<br>
+<p><hr></p>
+<br>
+<p><h2>7. Success Criteria</h2></p>
+<br>
+<p><h3>7.1 Demo Success</h3></p>
+<ul>
+<li>✅ Live FloodNet data integration working</li>
+<li>✅ Correlation algorithm shows 80%+ accuracy</li>
+<li>✅ Dashboard loads in <3 seconds</li>
+<li>✅ Real-time updates visible during demo</li>
+<li>✅ Partner API successfully triggered</li>
+<li>✅ Positive feedback from NYC PRI Data Team</li>
+</ul>
+<br>
+<p><h3>7.2 Post-Demo Goals</h3></p>
+<ul>
+<li>Secure funding for full development</li>
+<li>Onboard 3+ community organizations for pilot</li>
+<li>Establish formal partnership with NYC FloodNet</li>
+<li>Integrate with partner calling system</li>
+<li>Expand to all NYC flood-prone neighborhoods</li>
+</ul>
+<br>
+<p><hr></p>
+<br>
+<p><h2>8. Risks & Mitigations</h2></p>
+<br>
+<p>| Risk | Impact | Probability | Mitigation |</p>
+<p>|------|--------|-------------|------------|</p>
+<p>| FloodNet API unavailable | High | Medium | Build mock data fallback for demo |</p>
+<p>| Social media API rate limits | Medium | High | Use pre-collected demo dataset |</p>
+<p>| Partner integration delays | Medium | Medium | Build standalone demo mode |</p>
+<p>| NLP accuracy issues | Medium | Medium | Manual curation of demo narratives |</p>
+<p>| Demo technical failure | High | Low | Pre-record backup video demo |</p>
+<br>
+<p><hr></p>
+<br>
+<p><h2>9. Future Enhancements (Post-Demo)</h2></p>
+<br>
+<p><h3>9.1 Phase 2 Features</h3></p>
+<ul>
+<li>Multi-language support (Spanish, Chinese, Bengali)</li>
+<li>Mobile app for community health workers</li>
+<li>SMS-based resident reporting</li>
+<li>Integration with 311 flood reports</li>
+<li>Predictive flood modeling (ML-based)</li>
+</ul>
+<br>
+<p><h3>9.2 Expansion Opportunities</h3></p>
+<ul>
+<li>Adapt for other climate emergencies (heat waves, hurricanes)</li>
+<li>Expand to other cities with FloodNet deployments</li>
+<li>Partner with FEMA for national deployment</li>
+<li>Research publication on Narrative-to-Numbers methodology</li>
+</ul>
+<br>
+<p><hr></p>
+<br>
+<p><h2>10. Appendices</h2></p>
+<br>
+<p><h3>10.1 Data Sources</h3></p>
+<ul>
+<li><strong>FloodNet</strong>: https://dataviz.floodnet.nyc/</li>
+<li><strong>NYC FVI</strong>: https://data.cityofnewyork.us/Health/Flood-Vulnerability-Index-FVI-/qrqj-xeaq</li>
+<li><strong>FEMA Flood Zones</strong>: https://msc.fema.gov/portal/home</li>
+</ul>
+<br>
+<p><h3>10.2 Key Contacts</h3></p>
+<ul>
+<li><strong>NYC PRI Data Team</strong>: Demo audience (Dec 9)</li>
+<li><strong>Partner Developer</strong>: Calling system integration</li>
+<li><strong>FloodNet Team</strong>: Data access and technical support</li>
+</ul>
+<br>
+<p><h3>10.3 References</h3></p>
+<ul>
+<li>NYC FloodNet Documentation</li>
+<li>NYC DOHMH Flood Vulnerability Index Methodology</li>
+<li>FEMA Flood Risk Assessment Guidelines</li>
+</ul>
+<br>
+<p><hr></p>
+<br>
+<p><strong>Document Status:</strong> Draft v1.0  </p>
+<p><strong>Next Review:</strong> November 15, 2025  </p>
+<p><strong>Approval Required:</strong> NYC PRI Data Team Lead</p>
+<br>
+<br>
+    </body>
+    </html>
+    

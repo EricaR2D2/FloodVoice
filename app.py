@@ -13,6 +13,8 @@ import sqlite3
 import os
 from datetime import datetime
 import logging
+import urllib.request
+import urllib.error
 
 # Configure logging
 logging.basicConfig(
@@ -36,12 +38,75 @@ DATABASE_PATH = 'floodvoice.db'
 FLOODNET_UPDATE_INTERVAL = 300  # 5 minutes
 
 # Import flood dashboard functionality
-from flood_dashboard import FloodDataManager
+from flood_dashboard import FloodDashboardData
 
 # Initialize flood data manager
-flood_data = FloodDataManager(DATABASE_PATH)
+flood_data = FloodDashboardData(DATABASE_PATH)
 
+# ============================================================================
+# SUPABASE CONNECTION - Josue's live data
+# ============================================================================
 
+SUPABASE_URL = "https://mbavifzuiiyewengxrpu.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iYXZpZnp1aWl5ZXdlbmd4cnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5NDQ4MDUsImV4cCI6MjA4MDUyMDgwNX0.opye6RBgRQv2GisAawuNkHaymM3or2W2qMbptcJYzlc"
+
+def fetch_from_supabase(table, order_by=None):
+    """Fetch data from Josue's Supabase database"""
+    url = f"{SUPABASE_URL}/rest/v1/{table}?select=*"
+    if order_by:
+        url += f"&order={order_by}.desc"
+    
+    req = urllib.request.Request(url)
+    req.add_header("apikey", SUPABASE_KEY)
+    req.add_header("Authorization", f"Bearer {SUPABASE_KEY}")
+    req.add_header("Content-Type", "application/json")
+    
+    try:
+        with urllib.request.urlopen(req) as response:
+            return json.loads(response.read().decode())
+    except Exception as e:
+        logger.error(f"Supabase fetch error: {e}")
+        return []
+
+@app.route('/api/residents')
+def get_residents():
+    """Get residents with their latest call log data"""
+    try:
+        residents = fetch_from_supabase("residents")
+        call_logs = fetch_from_supabase("call_logs", order_by="created_at")
+        
+        # Match each resident to their latest call log
+        latest_calls = {}
+        for call in call_logs:
+            rid = call.get("resident_id")
+            if rid not in latest_calls:
+                latest_calls[rid] = call
+        
+        # Build combined resident + call data
+        combined = []
+        for r in residents:
+            call = latest_calls.get(r["id"], {})
+            combined.append({
+                "id": r["id"],
+                "name": r.get("name", "Unknown"),
+                "address": r.get("address", "N/A"),
+                "language": r.get("language", "N/A"),
+                "status": r.get("status", "UNKNOWN"),
+                "urgency_score": call.get("sentiment_score", 0) or 0,
+                "risk_label": call.get("risk_label", "N/A"),
+                "summary": call.get("summary", "No call yet"),
+                "last_called": call.get("created_at", "Never")[:16].replace("T", " ") if call.get("created_at") else "Never"
+            })
+        
+        # Sort by urgency — highest first
+        combined.sort(key=lambda x: x["urgency_score"], reverse=True)
+        
+        return jsonify({"success": True, "residents": combined})
+    
+    except Exception as e:
+        logger.error(f"Error fetching residents: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+    
 # ============================================================================
 # ROUTES - Web Pages
 # ============================================================================

@@ -23,7 +23,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-
 class FloodDashboardData:
     def __init__(self, db_path="public_health_data.db"):
         self.db_path = db_path
