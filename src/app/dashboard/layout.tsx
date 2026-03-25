@@ -78,11 +78,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </aside>
 
                 {/* Main Content Area */}
-                <main className="flex-1 ml-64 p-8 relative">
+                <main className="flex-1 ml-64 p-6 relative">
                     {/* ambient background glow */}
                     <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-blue-900/10 to-transparent pointer-events-none" />
 
-                    <div className="relative z-10 max-w-6xl mx-auto">
+                    <div className="relative z-10">
                         {children}
                     </div>
                 </main>

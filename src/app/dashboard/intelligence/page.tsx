@@ -1,58 +1,91 @@
 'use client';
 
-import { ExternalLink, Waves, ShieldAlert, BarChart2, MessageSquare, MapPin, AlertTriangle, Users, TrendingUp } from 'lucide-react';
+import { ExternalLink, Waves, ShieldAlert, BarChart2, MessageSquare, MapPin, AlertTriangle, Users, Building2 } from 'lucide-react';
+import { getNeighborhoodsSorted, TIER_CONFIG, COVERAGE_LABEL, type IdaNeighborhood } from '@/lib/neighborhoods';
 
-// ─── FVI Data (NYC Flood Vulnerability Index — hardcoded from public data) ───
-const FVI_NEIGHBORHOODS = [
-    {
-        name: 'Hunts Point',
-        borough: 'Bronx',
-        zip: '10474',
-        score: 8.6,
-        tier: 'Very High',
-        tierColor: 'text-red-400',
-        tierBg: 'bg-red-500/10 border-red-500/30',
-        population: '12,400',
-        primaryRisk: 'Industrial waterfront, tidal surge',
-        languages: ['Spanish', 'English'],
-    },
-    {
-        name: 'Red Hook',
-        borough: 'Brooklyn',
-        zip: '11231',
-        score: 8.2,
-        tier: 'Very High',
-        tierColor: 'text-red-400',
-        tierBg: 'bg-red-500/10 border-red-500/30',
-        population: '11,000',
-        primaryRisk: 'Coastal AE/VE zone, Sandy impact area',
-        languages: ['English', 'Spanish'],
-    },
-    {
-        name: 'Canarsie',
-        borough: 'Brooklyn',
-        zip: '11236',
-        score: 7.4,
-        tier: 'High',
-        tierColor: 'text-orange-400',
-        tierBg: 'bg-orange-500/10 border-orange-500/30',
-        population: '38,000',
-        primaryRisk: 'Low-lying streets, Jamaica Bay proximity',
-        languages: ['English', 'Haitian Creole'],
-    },
-    {
-        name: 'South Bronx',
-        borough: 'Bronx',
-        zip: '10454',
-        score: 7.1,
-        tier: 'High',
-        tierColor: 'text-orange-400',
-        tierBg: 'bg-orange-500/10 border-orange-500/30',
-        population: '24,800',
-        primaryRisk: 'Bruckner/Willis corridor, stormwater',
-        languages: ['Spanish', 'English'],
-    },
-];
+// Pre-sort once at module level — Tier 1 first, then by true_risk_score desc
+const SORTED_NEIGHBORHOODS = getNeighborhoodsSorted();
+
+function NeighborhoodCard({ n }: { n: IdaNeighborhood }) {
+    const tier = TIER_CONFIG[n.priority_tier];
+    return (
+        <div className={`rounded-xl p-5 border ${tier.bg} flex flex-col gap-3`}>
+            {/* Header: tier pill + name + score */}
+            <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${tier.bg} ${tier.color}`}>
+                        {tier.shortLabel}
+                    </span>
+                    <h4 className="text-base font-bold text-white mt-2 flex items-center gap-1.5 truncate">
+                        <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span className="truncate">{n.name}</span>
+                    </h4>
+                    <p className="text-xs text-slate-400 ml-[22px]">{n.borough}</p>
+                </div>
+                <div className="text-right shrink-0">
+                    <div className={`text-3xl font-bold leading-none ${tier.color}`}>{n.true_risk_score}</div>
+                    <div className="text-xs text-slate-500">/ 100</div>
+                </div>
+            </div>
+
+            {/* FEMA gap warning */}
+            {n.fema_gap_flag && (
+                <div className="flex items-center gap-1.5 text-xs bg-yellow-500/10 border border-yellow-500/20 rounded-md px-2.5 py-1.5 text-yellow-400">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    Ida damage in FEMA Zone {n.fema_designated_zone} — model gap confirmed
+                </div>
+            )}
+
+            {/* Score bar */}
+            <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full ${tier.dot}`} style={{ width: `${n.true_risk_score}%` }} />
+            </div>
+
+            {/* Key stats */}
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                <div className="flex items-center gap-1.5 text-slate-300">
+                    <AlertTriangle className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                    {n.ida_impact.local_damage_rate_pct}% dmg rate
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-300">
+                    <Users className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                    {n.demographics.lep_pct}% LEP
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-400 col-span-2">
+                    <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    {n.infrastructure.basement_units_at_risk !== null
+                        ? `${n.infrastructure.basement_units_at_risk.toLocaleString()} basement units`
+                        : 'Basement data pending'}
+                    <span className="text-slate-600">·</span>
+                    <span className="text-slate-500">{COVERAGE_LABEL[n.infrastructure.floodnet_coverage]}</span>
+                </div>
+            </div>
+
+            {/* Language tags */}
+            <div className="flex flex-wrap gap-1.5">
+                {n.demographics.primary_languages.slice(0, 3).map(lang => (
+                    <span key={lang} className="text-xs px-2 py-0.5 bg-slate-700/50 border border-slate-600/30 rounded text-slate-300">
+                        {lang}
+                    </span>
+                ))}
+                {n.demographics.primary_languages.length > 3 && (
+                    <span className="text-xs px-2 py-0.5 bg-slate-700/50 border border-slate-600/30 rounded text-slate-500">
+                        +{n.demographics.primary_languages.length - 3}
+                    </span>
+                )}
+            </div>
+
+            {/* CBO partners */}
+            <div className="text-xs text-slate-400 pt-1.5 border-t border-white/5">
+                {n.cbo_partners.length} CBO partner{n.cbo_partners.length !== 1 ? 's' : ''} ·{' '}
+                <span className="text-slate-500">
+                    {n.cbo_partners.slice(0, 2).map(c => c.name).join(', ')}
+                    {n.cbo_partners.length > 2 ? ' +more' : ''}
+                </span>
+            </div>
+        </div>
+    );
+}
 
 // ─── Community Voice Static Reports ───
 const COMMUNITY_REPORTS = [
@@ -122,8 +155,8 @@ function PanelHeader({ icon: Icon, title, subtitle, badge }: {
                     <Icon className="w-4 h-4 text-blue-400" />
                 </div>
                 <div>
-                    <h3 className="font-semibold text-white text-sm">{title}</h3>
-                    <p className="text-[11px] text-slate-400">{subtitle}</p>
+                    <h3 className="font-semibold text-white text-base">{title}</h3>
+                    <p className="text-xs text-slate-400">{subtitle}</p>
                 </div>
             </div>
             {badge && (
@@ -148,7 +181,7 @@ export default function FloodIntelligencePage() {
             <div>
                 <h1 className="text-3xl font-bold text-[var(--text-primary)]">Flood Intelligence</h1>
                 <p className="text-[var(--text-secondary)] mt-1">
-                    Live data from NYC FloodNet, FEMA flood zones, vulnerability index, and community reports.
+                    Live data from NYC FloodNet, FEMA flood zones, Ida priority neighborhood risk scores, and community reports.
                 </p>
             </div>
 
@@ -217,100 +250,72 @@ export default function FloodIntelligencePage() {
                 </div>
             </div>
 
-            {/* Bottom Row: FVI + Community Voice */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Ida Priority Neighborhoods — full width */}
+            <div className="glass-panel rounded-xl p-5 border border-white/5">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-blue-500/10">
+                            <BarChart2 className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-white text-base">Ida Priority Neighborhoods — True Risk Score</h3>
+                            <p className="text-xs text-slate-400">7 pilot areas · Scored by Ida damage, FEMA gap, LEP, and basement density</p>
+                        </div>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium bg-yellow-500/10 text-yellow-400 border-yellow-500/30 shrink-0">
+                        ⚠ 80.4% of Ida damage was in FEMA Zone X
+                    </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {SORTED_NEIGHBORHOODS.map(n => (
+                        <NeighborhoodCard key={n.id} n={n} />
+                    ))}
+                </div>
+                <p className="text-xs text-slate-500 mt-4">
+                    True Risk Score = weighted composite: Ida damage rate (30%) · FEMA model gap (25%) · LEP population (20%) · sensor gap (10%) · basement density (10%) · social vulnerability (5%). Source: NYC Community Flood Triage Pilot Report.
+                </p>
+            </div>
 
-                {/* Panel 3 — FVI */}
-                <div className="glass-panel rounded-xl p-5 border border-white/5">
-                    <PanelHeader
-                        icon={BarChart2}
-                        title="NYC Flood Vulnerability Index"
-                        subtitle="Community-level risk scores · Target neighborhoods"
-                        badge={{ label: 'Live', color: 'blue' }}
-                    />
-                    <div className="space-y-3">
-                        {FVI_NEIGHBORHOODS.map((n) => (
-                            <div key={n.zip} className={`p-3 rounded-lg border ${n.tierBg}`}>
-                                <div className="flex items-start justify-between gap-2 mb-1">
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                                            <span className="text-sm font-semibold text-[var(--text-primary)]">{n.name}</span>
-                                            <span className="text-[10px] text-slate-500">{n.borough} · {n.zip}</span>
-                                        </div>
-                                        <p className="text-[11px] text-[var(--text-secondary)] mt-1 ml-5">{n.primaryRisk}</p>
+            {/* Community Voice — full width */}
+            <div className="glass-panel rounded-xl p-5 border border-white/5">
+                <PanelHeader
+                    icon={MessageSquare}
+                    title="Community Voice Reports"
+                    subtitle="Field reports from residents and liaisons"
+                    badge={{ label: 'Demo', color: 'yellow' }}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {COMMUNITY_REPORTS.map((report) => {
+                        const sev = severityConfig[report.severity as keyof typeof severityConfig];
+                        return (
+                            <div key={report.id} className="p-4 rounded-lg bg-slate-800/40 border border-white/5 space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${sev.dot}`} />
+                                        <span className="text-xs font-medium text-slate-300">{report.location}</span>
                                     </div>
-                                    <div className="text-right shrink-0">
-                                        <div className={`text-lg font-bold ${n.tierColor}`}>{n.score}</div>
-                                        <div className={`text-[10px] font-medium ${n.tierColor}`}>{n.tier}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 mt-2 ml-5">
-                                    <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                                        <Users className="w-3 h-3" />
-                                        {n.population} residents
-                                    </div>
-                                    <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                                        <TrendingUp className="w-3 h-3" />
-                                        {n.languages.join(' · ')}
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {report.verified && (
+                                            <span className="text-[10px] px-2 py-0.5 bg-green-500/10 text-green-400 border border-green-500/30 rounded-full">✓ verified</span>
+                                        )}
+                                        <span className={`text-[10px] px-2 py-0.5 border rounded-full font-medium ${sev.bg} ${sev.color}`}>
+                                            {sev.label}
+                                        </span>
                                     </div>
                                 </div>
-                                {/* Score bar */}
-                                <div className="mt-2 ml-5 h-1 bg-slate-700/50 rounded-full overflow-hidden">
-                                    <div
-                                        className={`h-full rounded-full ${n.score >= 8 ? 'bg-red-500' : 'bg-orange-500'}`}
-                                        style={{ width: `${(n.score / 10) * 100}%` }}
-                                    />
+                                <p className="text-sm text-[var(--text-primary)] leading-relaxed">&ldquo;{report.message}&rdquo;</p>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-slate-500">{report.reporter}</span>
+                                    <span className="text-xs text-slate-600">{report.timestamp}</span>
                                 </div>
                             </div>
-                        ))}
-                        <p className="text-[10px] text-slate-600 mt-2">
-                            Source: NYC Office of Emergency Management · Flood Vulnerability Index · 2023
-                        </p>
-                    </div>
+                        );
+                    })}
                 </div>
-
-                {/* Panel 4 — Community Voice */}
-                <div className="glass-panel rounded-xl p-5 border border-white/5">
-                    <PanelHeader
-                        icon={MessageSquare}
-                        title="Community Voice Reports"
-                        subtitle="Field reports from residents and liaisons"
-                        badge={{ label: 'Demo', color: 'yellow' }}
-                    />
-                    <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-                        {COMMUNITY_REPORTS.map((report) => {
-                            const sev = severityConfig[report.severity as keyof typeof severityConfig];
-                            return (
-                                <div key={report.id} className="p-3 rounded-lg bg-slate-800/40 border border-white/5 space-y-1.5">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full shrink-0 ${sev.dot}`} />
-                                            <span className="text-[10px] font-medium text-slate-400">{report.location}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            {report.verified && (
-                                                <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/30 rounded-full">✓ verified</span>
-                                            )}
-                                            <span className={`text-[9px] px-1.5 py-0.5 border rounded-full font-medium ${sev.bg} ${sev.color}`}>
-                                                {sev.label}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-[var(--text-primary)] leading-relaxed">&ldquo;{report.message}&rdquo;</p>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] text-slate-500">{report.reporter}</span>
-                                        <span className="text-[10px] text-slate-600">{report.timestamp}</span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-white/5">
-                        <p className="text-[10px] text-slate-600">
-                            Demo data — live community_reports table connects here when Supabase is configured.
-                        </p>
-                    </div>
+                <div className="mt-3 pt-3 border-t border-white/5">
+                    <p className="text-xs text-slate-500">
+                        Demo data — live community_reports table connects here when Supabase is configured.
+                    </p>
                 </div>
             </div>
         </div>

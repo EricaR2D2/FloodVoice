@@ -17,6 +17,32 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, User, Phone, MapPin, Languages, Activity, Trash2, Edit2, PhoneCall, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getZipPriorityOrder, getNeighborhoodByZip, TIER_CONFIG } from '@/lib/neighborhoods';
+
+// ─── Sort helpers ─────────────────────────────────────────────────────────────
+
+const STATUS_ORDER: Record<string, number> = {
+    distress:    0,
+    unresponsive: 1,
+    pending:     2,
+    safe:        3,
+    unaffected:  3,
+};
+
+function sortResidents(list: Resident[]): Resident[] {
+    return [...list].sort((a, b) => {
+        // 1st: Ida neighborhood priority (lower = higher priority; 999 = not mapped)
+        const nA = getZipPriorityOrder(a.zip_code);
+        const nB = getZipPriorityOrder(b.zip_code);
+        if (nA !== nB) return nA - nB;
+        // 2nd: status urgency
+        const sA = STATUS_ORDER[a.status] ?? 4;
+        const sB = STATUS_ORDER[b.status] ?? 4;
+        if (sA !== sB) return sA - sB;
+        // 3rd: alphabetical
+        return a.name.localeCompare(b.name);
+    });
+}
 
 // Type definition
 type Resident = {
@@ -56,12 +82,11 @@ export default function ResidentsPage() {
 
     const fetchResidents = async () => {
         setIsLoading(true);
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('residents')
-            .select('*')
-            .order('created_at', { ascending: false });
+            .select('*');
 
-        if (data) setResidents(data as Resident[]);
+        if (data) setResidents(sortResidents(data as Resident[]));
         setIsLoading(false);
     };
 
@@ -204,7 +229,10 @@ export default function ResidentsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-white">Your Pod</h1>
-                    <p className="text-slate-400">Manage the vulnerable residents you are responsible for.</p>
+                    <p className="text-slate-400 mt-1">
+                        Sorted by <span className="text-blue-400 font-medium">Ida neighborhood priority</span> → status urgency.
+                        Tier 1 residents appear first.
+                    </p>
                 </div>
 
                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -315,7 +343,21 @@ export default function ResidentsPage() {
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-white text-lg">{resident.name}</h3>
-                                        {resident.age && <span className="text-xs text-slate-500">{resident.age} years old</span>}
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                            {resident.age && (
+                                                <span className="text-xs text-slate-500">{resident.age} yrs</span>
+                                            )}
+                                            {(() => {
+                                                const hood = getNeighborhoodByZip(resident.zip_code ?? '');
+                                                if (!hood) return null;
+                                                const tier = TIER_CONFIG[hood.priority_tier];
+                                                return (
+                                                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${tier.bg} ${tier.color}`}>
+                                                        {tier.shortLabel} · {hood.name}
+                                                    </span>
+                                                );
+                                            })()}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className={cn(
