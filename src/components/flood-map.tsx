@@ -54,6 +54,10 @@ export function FloodMap({ className }: { className?: string }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFloodingOnly, setShowFloodingOnly] = useState(false);
 
+    // FEMA flood zone layer toggle
+    const [showFemaZones, setShowFemaZones] = useState(false);
+    const [femaLoading, setFemaLoading] = useState(false);
+
     // NYC center coordinates
     const NYC_CENTER: [number, number] = [-73.935242, 40.730610];
     const NYC_ZOOM = 10;
@@ -248,6 +252,78 @@ export function FloodMap({ className }: { className?: string }) {
         }
     }, [sensors, floodingData, mapLoaded, searchQuery, showFloodingOnly]);
 
+    // FEMA zone layer — add/remove based on toggle
+    useEffect(() => {
+        if (!map.current || !mapLoaded) return;
+
+        const FEMA_SOURCE = 'fema-zones';
+        const FEMA_FILL = 'fema-zones-fill';
+        const FEMA_OUTLINE = 'fema-zones-outline';
+
+        const removeFemaLayers = () => {
+            if (map.current!.getLayer(FEMA_OUTLINE)) map.current!.removeLayer(FEMA_OUTLINE);
+            if (map.current!.getLayer(FEMA_FILL)) map.current!.removeLayer(FEMA_FILL);
+            if (map.current!.getSource(FEMA_SOURCE)) map.current!.removeSource(FEMA_SOURCE);
+        };
+
+        if (!showFemaZones) {
+            removeFemaLayers();
+            return;
+        }
+
+        // Already loaded
+        if (map.current.getSource(FEMA_SOURCE)) return;
+
+        setFemaLoading(true);
+        fetch('/api/fema/zones')
+            .then(r => r.json())
+            .then(geojson => {
+                if (!map.current || map.current.getSource(FEMA_SOURCE)) return;
+                map.current.addSource(FEMA_SOURCE, { type: 'geojson', data: geojson });
+
+                // Fill layer — color by zone type
+                map.current.addLayer({
+                    id: FEMA_FILL,
+                    type: 'fill',
+                    source: FEMA_SOURCE,
+                    paint: {
+                        'fill-color': [
+                            'match', ['get', 'FLD_ZONE'],
+                            'VE', 'rgba(239,68,68,0.25)',   // Red — coastal high hazard
+                            'AE', 'rgba(59,130,246,0.18)',  // Blue — 100-yr flood
+                            'AO', 'rgba(168,85,247,0.18)',  // Purple — shallow flooding
+                            'AH', 'rgba(168,85,247,0.18)',
+                            'A',  'rgba(59,130,246,0.12)',
+                            'rgba(0,0,0,0)'                 // X and others — transparent
+                        ],
+                        'fill-opacity': 1,
+                    },
+                }, 'waterway-label'); // insert below labels
+
+                // Outline layer
+                map.current.addLayer({
+                    id: FEMA_OUTLINE,
+                    type: 'line',
+                    source: FEMA_SOURCE,
+                    paint: {
+                        'line-color': [
+                            'match', ['get', 'FLD_ZONE'],
+                            'VE', 'rgba(239,68,68,0.7)',
+                            'AE', 'rgba(59,130,246,0.5)',
+                            'rgba(0,0,0,0)'
+                        ],
+                        'line-width': 1,
+                    },
+                }, 'waterway-label');
+            })
+            .catch(err => console.error('FEMA layer error:', err))
+            .finally(() => setFemaLoading(false));
+
+        return () => {
+            // Only clean up when the component unmounts, not on every toggle re-run
+        };
+    }, [showFemaZones, mapLoaded]);
+
     const activeCount = sensors.filter(s => s.sensor_status === 'good').length;
     const offlineCount = sensors.filter(s => ['dead', 'retired'].includes(s.sensor_status)).length;
 
@@ -315,6 +391,26 @@ export function FloodMap({ className }: { className?: string }) {
                     )}
                 </button>
 
+                {/* FEMA Zones Toggle */}
+                <button
+                    onClick={() => setShowFemaZones(!showFemaZones)}
+                    disabled={femaLoading}
+                    className={cn(
+                        "flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-all",
+                        showFemaZones
+                            ? "bg-blue-500/30 border border-blue-400 text-blue-300"
+                            : "bg-slate-800/50 border border-white/10 text-slate-400 hover:border-white/20"
+                    )}
+                    title="Toggle FEMA flood zone overlay"
+                >
+                    {femaLoading ? (
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                        <Waves className="w-3 h-3" />
+                    )}
+                    FEMA Zones
+                </button>
+
                 {/* FloodNet Full Dashboard Link */}
                 <a
                     href="https://dataviz.floodnet.nyc"
@@ -371,6 +467,7 @@ export function FloodMap({ className }: { className?: string }) {
 
                 {/* Legend */}
                 <div className="absolute bottom-4 left-4 glass-panel p-3 rounded-lg text-xs space-y-1.5 z-10">
+                    <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide mb-2">Sensors</div>
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-green-500 border border-white/50" />
                         <span className="text-slate-300">Active</span>
@@ -387,6 +484,23 @@ export function FloodMap({ className }: { className?: string }) {
                         <div className="w-3 h-3 rounded-full bg-slate-500 border border-white/50" />
                         <span className="text-slate-300">Offline</span>
                     </div>
+                    {showFemaZones && (
+                        <>
+                            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide mt-3 mb-1">FEMA Zones</div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-red-500/50 border border-red-400/70" />
+                                <span className="text-slate-300">VE — Coastal</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-blue-500/40 border border-blue-400/60" />
+                                <span className="text-slate-300">AE — 100-yr</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-purple-500/40 border border-purple-400/60" />
+                                <span className="text-slate-300">AO/AH — Shallow</span>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
