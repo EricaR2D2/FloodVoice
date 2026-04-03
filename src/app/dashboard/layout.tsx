@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Brain, Settings, LogOut, Phone, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Users, Brain, Settings, LogOut, Phone, Sun, Moon, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FloodingProvider } from '@/contexts/flooding-context';
 import { useTheme } from '@/contexts/theme-context';
@@ -16,6 +16,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         { name: 'Command Center', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Live Calls', href: '/dashboard/calls', icon: Phone },
         { name: 'Residents Pod', href: '/dashboard/residents', icon: Users },
+        { name: 'Intake Form', href: '/dashboard/intake', icon: ClipboardList },
         { name: 'Flood Intelligence', href: '/dashboard/intelligence', icon: Brain },
         { name: 'Settings', href: '/dashboard/settings', icon: Settings },
     ];

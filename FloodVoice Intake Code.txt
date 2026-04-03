@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FloodVoice AI — Resident Registration</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f6f9;min-height:100vh;padding:1rem}
+  .app{max-width:520px;margin:0 auto;padding:0 0 2rem}
+  .app-header{background:#0C447C;padding:12px 16px;border-radius:12px 12px 0 0}
+  .app-header h1{color:#E6F1FB;font-size:15px;font-weight:500;margin-bottom:2px}
+  .app-header p{color:#85B7EB;font-size:11px}
+  .amber-bar{height:4px;background:#EF9F27}
+  .lang-tabs{display:flex;border-bottom:0.5px solid #ccc;background:#f4f6f9}
+  .lang-tab{flex:1;padding:10px 4px;font-size:12px;text-align:center;cursor:pointer;color:#666;border:none;background:transparent;border-bottom:2px solid transparent;transition:all .15s}
+  .lang-tab.active{color:#0C447C;border-bottom:2px solid #0C447C;font-weight:500;background:#fff}
+  .privacy{margin:12px 12px 0;padding:10px 12px;background:#FFF8EC;border-left:3px solid #EF9F27;border-radius:0 6px 6px 0;font-size:11px;color:#5C3000;line-height:1.5}
+  .form-body{padding:0 12px}
+  .section{margin-top:14px}
+  .section-hdr{background:#0C447C;color:#E6F1FB;font-size:11px;font-weight:500;padding:6px 10px;border-radius:8px 8px 0 0;letter-spacing:0.02em}
+  .section-body{border:0.5px solid #ccc;border-top:none;border-radius:0 0 8px 8px;padding:12px;background:#fff}
+  .row{display:grid;gap:10px;margin-bottom:10px}
+  .row.two{grid-template-columns:1fr 1fr}
+  .row.three{grid-template-columns:1fr 1fr 1fr}
+  .field label{display:block;font-size:11px;color:#0C447C;font-weight:500;margin-bottom:3px}
+  .field input,.field select,.field textarea{width:100%;font-size:13px;padding:6px 8px;border:0.5px solid #ccc;border-radius:6px;background:#fff;color:#1a1a1a;outline:none}
+  .field input:focus,.field textarea:focus{border-color:#378ADD;box-shadow:0 0 0 2px #E6F1FB}
+  .field textarea{resize:none;height:52px}
+  .check-group{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:4px}
+  .check-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#1a1a1a;cursor:pointer}
+  .check-item input[type=checkbox],.check-item input[type=radio]{width:14px;height:14px;cursor:pointer;accent-color:#0C447C}
+  .basement-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid #eee;margin-bottom:8px}
+  .basement-row label{font-size:12px;color:#0C447C;font-weight:500}
+  .yesno{display:flex;gap:16px}
+  .liaison-section{margin-top:14px;background:#F4F6F9;border-radius:12px;border:0.5px solid #ccc;overflow:hidden}
+  .liaison-hdr{background:#185FA5;color:#E6F1FB;font-size:11px;font-weight:500;padding:6px 10px}
+  .liaison-body{padding:12px}
+  .submit-btn{display:block;width:100%;margin-top:16px;padding:12px;background:#0C447C;color:#E6F1FB;font-size:14px;font-weight:500;border:none;border-radius:12px;cursor:pointer;text-align:center}
+  .submit-btn:hover{background:#185FA5}
+  .success{display:none;margin-top:16px;padding:16px;background:#E6F1FB;border:0.5px solid #378ADD;border-radius:12px;text-align:center}
+  .success h3{color:#0C447C;font-size:15px;font-weight:500;margin-bottom:6px}
+  .success p{font-size:13px;color:#185FA5}
+  .req-note{font-size:11px;color:#CC0000;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="app-header">
+    <h1 id="app-title">FloodVoice AI — Resident Registration</h1>
+    <p id="app-sub">Flood Emergency Early Warning System</p>
+  </div>
+  <div class="amber-bar"></div>
+
+  <div class="lang-tabs">
+    <button class="lang-tab active" onclick="setLang('en')">English</button>
+    <button class="lang-tab" onclick="setLang('es')">Español</button>
+    <button class="lang-tab" onclick="setLang('bn')">বাংলা</button>
+    <button class="lang-tab" onclick="setLang('zh')">中文</button>
+  </div>
+
+  <div class="privacy" id="privacy-notice"></div>
+
+  <div class="form-body">
+
+    <div class="section">
+      <div class="section-hdr" id="sec1-hdr"></div>
+      <div class="section-body">
+        <div class="row"><div class="field"><label id="lbl-name"></label><input type="text" id="f-name" autocomplete="name"></div></div>
+        <div class="row two">
+          <div class="field"><label id="lbl-dob"></label><input type="date" id="f-dob"></div>
+          <div class="field"><label id="lbl-phone"></label><input type="tel" id="f-phone" autocomplete="tel"></div>
+        </div>
+        <div class="row two">
+          <div class="field"><label id="lbl-alt-phone"></label><input type="tel" id="f-alt-phone"></div>
+          <div class="field"><label id="lbl-email"></label><input type="email" id="f-email" autocomplete="email"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-hdr" id="sec2-hdr"></div>
+      <div class="section-body">
+        <div class="row"><div class="field"><label id="lbl-address"></label><input type="text" id="f-address" autocomplete="street-address"></div></div>
+        <div class="row two">
+          <div class="field"><label id="lbl-borough"></label><input type="text" id="f-borough"></div>
+          <div class="field"><label id="lbl-floor"></label><input type="text" id="f-floor"></div>
+        </div>
+        <div class="basement-row">
+          <label id="lbl-basement"></label>
+          <div class="yesno">
+            <label class="check-item"><input type="radio" name="basement" value="yes"> <span id="lbl-yes"></span></label>
+            <label class="check-item"><input type="radio" name="basement" value="no"> <span id="lbl-no"></span></label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><label id="lbl-household"></label><input type="number" id="f-household" min="1" max="20" style="width:80px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-hdr" id="sec3-hdr"></div>
+      <div class="section-body">
+        <div class="row two">
+          <div class="field"><label id="lbl-kin-name"></label><input type="text" id="f-kin-name"></div>
+          <div class="field"><label id="lbl-kin-phone"></label><input type="tel" id="f-kin-phone"></div>
+        </div>
+        <div class="row two">
+          <div class="field"><label id="lbl-kin-rel"></label><input type="text" id="f-kin-rel"></div>
+          <div class="field"><label id="lbl-kin-addr"></label><input type="text" id="f-kin-addr"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-hdr" id="sec4-hdr"></div>
+      <div class="section-body">
+        <div class="basement-row">
+          <label id="lbl-disability"></label>
+          <div class="yesno">
+            <label class="check-item"><input type="radio" name="disability" value="yes" onchange="toggleDisability(true)"> <span id="lbl-yes2"></span></label>
+            <label class="check-item"><input type="radio" name="disability" value="no" onchange="toggleDisability(false)"> <span id="lbl-no2"></span></label>
+          </div>
+        </div>
+        <div class="row" id="disability-desc-row" style="display:none">
+          <div class="field"><label id="lbl-disability-desc"></label><input type="text" id="f-disability-desc"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label id="lbl-medical"></label><textarea id="f-medical"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-hdr" id="sec5-hdr"></div>
+      <div class="section-body">
+        <div class="field" style="margin-bottom:10px">
+          <label id="lbl-language"></label>
+          <div class="check-group" id="lang-options"></div>
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label id="lbl-contact-pref"></label>
+          <div class="check-group">
+            <label class="check-item"><input type="radio" name="contact_pref" value="call"> <span id="lbl-call"></span></label>
+            <label class="check-item"><input type="radio" name="contact_pref" value="sms"> <span id="lbl-sms"></span></label>
+            <label class="check-item"><input type="radio" name="contact_pref" value="both"> <span id="lbl-both"></span></label>
+          </div>
+        </div>
+        <div class="field">
+          <label id="lbl-best-time"></label>
+          <div class="check-group">
+            <label class="check-item"><input type="radio" name="best_time" value="morning"> <span id="lbl-morning"></span></label>
+            <label class="check-item"><input type="radio" name="best_time" value="afternoon"> <span id="lbl-afternoon"></span></label>
+            <label class="check-item"><input type="radio" name="best_time" value="evening"> <span id="lbl-evening"></span></label>
+            <label class="check-item"><input type="radio" name="best_time" value="anytime"> <span id="lbl-anytime"></span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-hdr" id="sec6-hdr"></div>
+      <div class="section-body">
+        <p id="consent-text" style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px"></p>
+        <div class="row two">
+          <div class="field"><label id="lbl-signature"></label><input type="text" id="f-signature" placeholder="Type full name"></div>
+          <div class="field"><label id="lbl-date"></label><input type="date" id="f-date"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="liaison-section">
+      <div class="liaison-hdr" id="lbl-for-liaison"></div>
+      <div class="liaison-body">
+        <div class="row three">
+          <div class="field"><label id="lbl-liaison-name"></label><input type="text" id="f-liaison-name"></div>
+          <div class="field"><label id="lbl-liaison-org"></label><input type="text" id="f-liaison-org"></div>
+          <div class="field"><label id="lbl-reg-date"></label><input type="date" id="f-reg-date"></div>
+        </div>
+        <div class="row two">
+          <div class="field"><label id="lbl-neighborhood"></label><input type="text" id="f-neighborhood"></div>
+          <div class="field"><label id="lbl-form-id"></label><input type="text" id="f-form-id" placeholder="FV-"></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="req-note" id="req-note"></p>
+    <button class="submit-btn" id="submit-btn" onclick="submitForm()"></button>
+    <div class="success" id="success-msg">
+      <h3 id="success-title"></h3>
+      <p id="success-body"></p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const T = {
+  en:{
+    title:"FloodVoice AI — Resident Registration",sub:"Flood Emergency Early Warning System",
+    privacy:"PRIVACY NOTICE: Information collected is used solely for flood emergency response. Data is NOT shared with immigration authorities or any government agency. This program serves all residents regardless of immigration status.",
+    req:"* Required field",
+    s1:"Section 1 — Personal information",s2:"Section 2 — Household & housing",
+    s3:"Section 3 — Emergency contact",s4:"Section 4 — Health & access needs",
+    s5:"Section 5 — Contact preferences",s6:"Section 6 — Consent",
+    name:"Full name *",dob:"Date of birth *",phone:"Phone number *",
+    altPhone:"Alternate phone",email:"Email (optional)",
+    address:"Home address *",borough:"Borough / ZIP code *",floor:"Floor / apt #",
+    basement:"Basement apartment?",household:"# people in household *",
+    yes:"Yes",no:"No",
+    kinName:"Next of kin — full name *",kinPhone:"Next of kin — phone *",
+    kinRel:"Relationship",kinAddr:"Next of kin address (if different)",
+    disability:"Disability affecting evacuation?",disabilityDesc:"Please describe",
+    medical:"Medical conditions relevant to emergency response (optional)",
+    language:"Preferred language *",
+    langs:["English","Español","Bengali","Mandarin","Korean","Haitian Creole","Other"],
+    contactPref:"Preferred contact method *",
+    call:"Voice call",sms:"SMS / text",both:"Both",
+    bestTime:"Best time to reach you",
+    morning:"Morning (8am–12pm)",afternoon:"Afternoon (12–5pm)",evening:"Evening (5–8pm)",anytime:"Anytime",
+    consent:"I consent to be contacted by FloodVoice AI during flood warnings for welfare checks. I understand that pressing 2 during a call will alert emergency responders to my location. Data is used only for flood emergency response.",
+    signature:"Signature (type full name) *",date:"Date *",
+    forLiaison:"For liaison use only",
+    liaisonName:"Liaison name",liaisonOrg:"Organization",regDate:"Registration date",
+    neighborhood:"Neighborhood / pilot site",formId:"Form ID",
+    submitBtn:"Submit registration",
+    successTitle:"Registration submitted",successBody:"This resident has been enrolled in FloodVoice AI flood emergency alerts.",
+  },
+  es:{
+    title:"FloodVoice AI — Registro de Residente",sub:"Sistema de Alerta Temprana de Emergencias por Inundaciones",
+    privacy:"AVISO DE PRIVACIDAD: La información recopilada se utiliza únicamente para la respuesta a emergencias por inundaciones. Los datos NO se comparten con autoridades de inmigración. Este programa sirve a todos los residentes independientemente de su estatus migratorio.",
+    req:"* Campo obligatorio",
+    s1:"Sección 1 — Información personal",s2:"Sección 2 — Hogar y vivienda",
+    s3:"Sección 3 — Contacto de emergencia",s4:"Sección 4 — Salud y necesidades de acceso",
+    s5:"Sección 5 — Preferencias de contacto",s6:"Sección 6 — Consentimiento",
+    name:"Nombre completo *",dob:"Fecha de nacimiento *",phone:"Teléfono *",
+    altPhone:"Teléfono alternativo",email:"Correo electrónico (opcional)",
+    address:"Dirección *",borough:"Borough / código postal *",floor:"Piso / apto",
+    basement:"¿Apartamento en sótano?",household:"# de personas en el hogar *",
+    yes:"Sí",no:"No",
+    kinName:"Familiar de emergencia — nombre *",kinPhone:"Familiar — teléfono *",
+    kinRel:"Parentesco",kinAddr:"Dirección del familiar (si es diferente)",
+    disability:"¿Discapacidad que afecte la evacuación?",disabilityDesc:"Por favor describa",
+    medical:"Condiciones médicas relevantes (opcional)",
+    language:"Idioma preferido *",
+    langs:["Inglés","Español","Bengalí","Mandarín","Coreano","Criollo haitiano","Otro"],
+    contactPref:"Método de contacto preferido *",
+    call:"Llamada de voz",sms:"SMS / texto",both:"Ambos",
+    bestTime:"Mejor hora para comunicarse",
+    morning:"Mañana (8–12)",afternoon:"Tarde (12–17)",evening:"Noche (17–20)",anytime:"Cualquier hora",
+    consent:"Doy mi consentimiento para ser contactado/a por FloodVoice AI durante alertas de inundación. Entiendo que al presionar 2 durante una llamada alertará a los servicios de emergencia sobre mi ubicación.",
+    signature:"Firma (escriba nombre completo) *",date:"Fecha *",
+    forLiaison:"Solo para uso del enlace comunitario",
+    liaisonName:"Nombre del enlace",liaisonOrg:"Organización",regDate:"Fecha de registro",
+    neighborhood:"Vecindario / sitio piloto",formId:"ID del formulario",
+    submitBtn:"Enviar registro",
+    successTitle:"Registro enviado",successBody:"Este residente ha sido inscrito en las alertas de emergencia de FloodVoice AI.",
+  },
+  bn:{
+    title:"FloodVoice AI — বাসিন্দা নিবন্ধন",sub:"বন্যা জরুরি প্রাথমিক সতর্কতা ব্যবস্থা",
+    privacy:"গোপনীয়তার নোটিশ: তথ্য শুধুমাত্র বন্যা জরুরি সাড়ার জন্য ব্যবহার করা হয়। অভিবাসন কর্তৃপক্ষের সাথে শেয়ার করা হয় না। অভিবাসন মর্যাদা নির্বিশেষে সকলকে সেবা দেওয়া হয়।",
+    req:"* প্রয়োজনীয় তথ্য",
+    s1:"বিভাগ ১ — ব্যক্তিগত তথ্য",s2:"বিভাগ ২ — পরিবার ও আবাসন",
+    s3:"বিভাগ ৩ — জরুরি যোগাযোগ",s4:"বিভাগ ৪ — স্বাস্থ্য ও প্রবেশাধিকার",
+    s5:"বিভাগ ৫ — যোগাযোগের পছন্দ",s6:"বিভাগ ৬ — সম্মতি",
+    name:"পুরো নাম *",dob:"জন্ম তারিখ *",phone:"ফোন নম্বর *",
+    altPhone:"বিকল্প ফোন",email:"ইমেইল (ঐচ্ছিক)",
+    address:"বাড়ির ঠিকানা *",borough:"বরো / জিপ কোড *",floor:"তলা / অ্যাপার্টমেন্ট",
+    basement:"বেসমেন্ট অ্যাপার্টমেন্ট?",household:"পরিবারের সদস্য সংখ্যা *",
+    yes:"হ্যাঁ",no:"না",
+    kinName:"নিকটতম স্বজন — নাম *",kinPhone:"নিকটতম স্বজন — ফোন *",
+    kinRel:"সম্পর্ক",kinAddr:"স্বজনের ঠিকানা (যদি আলাদা হয়)",
+    disability:"সরিয়ে নেওয়াকে প্রভাবিত করে এমন প্রতিবন্ধিতা?",disabilityDesc:"বর্ণনা করুন",
+    medical:"জরুরি সাড়ার জন্য চিকিৎসা অবস্থা (ঐচ্ছিক)",
+    language:"পছন্দের ভাষা *",
+    langs:["ইংরেজি","স্প্যানিশ","বাংলা","ম্যান্ডারিন","কোরিয়ান","হাইতিয়ান ক্রেওল","অন্যান্য"],
+    contactPref:"পছন্দের যোগাযোগ পদ্ধতি *",
+    call:"ভয়েস কল",sms:"এসএমএস",both:"উভয়",
+    bestTime:"যোগাযোগের সেরা সময়",
+    morning:"সকাল (৮–১২)",afternoon:"বিকেল (১২–৫)",evening:"সন্ধ্যা (৫–৮)",anytime:"যেকোনো সময়",
+    consent:"আমি বন্যার সতর্কতার সময় FloodVoice AI দ্বারা যোগাযোগের অনুমতি দিচ্ছি। কলের সময় ২ চাপলে জরুরি সেবাকারীদের কাছে আমার অবস্থান জানানো হবে।",
+    signature:"স্বাক্ষর (পুরো নাম লিখুন) *",date:"তারিখ *",
+    forLiaison:"শুধুমাত্র কমিউনিটি লিয়াজোঁর ব্যবহারের জন্য",
+    liaisonName:"লিয়াজোঁর নাম",liaisonOrg:"সংস্থা",regDate:"নিবন্ধনের তারিখ",
+    neighborhood:"এলাকা / পাইলট সাইট",formId:"ফর্ম আইডি",
+    submitBtn:"নিবন্ধন জমা দিন",
+    successTitle:"নিবন্ধন সম্পন্ন",successBody:"এই বাসিন্দাকে FloodVoice AI বন্যা জরুরি সতর্কতায় নথিভুক্ত করা হয়েছে।",
+  },
+  zh:{
+    title:"FloodVoice AI — 居民登记",sub:"洪水紧急预警系统",
+    privacy:"隐私声明：收集的信息仅用于洪水紧急响应，不与移民局共享。本项目为所有居民服务，无论移民身份如何。",
+    req:"* 必填项",
+    s1:"第一部分 — 个人信息",s2:"第二部分 — 家庭与住房",
+    s3:"第三部分 — 紧急联系人",s4:"第四部分 — 健康与无障碍需求",
+    s5:"第五部分 — 联系偏好",s6:"第六部分 — 同意书",
+    name:"姓名 *",dob:"出生日期 *",phone:"电话号码 *",
+    altPhone:"备用电话",email:"电子邮件（可选）",
+    address:"家庭地址 *",borough:"行政区 / 邮编 *",floor:"楼层 / 公寓号",
+    basement:"地下室公寓？",household:"家庭成员人数 *",
+    yes:"是",no:"否",
+    kinName:"紧急联系人 — 姓名 *",kinPhone:"紧急联系人 — 电话 *",
+    kinRel:"关系",kinAddr:"紧急联系人地址（如不同）",
+    disability:"是否有影响疏散的残疾？",disabilityDesc:"请描述",
+    medical:"与紧急响应相关的病情（可选）",
+    language:"首选语言 *",
+    langs:["英语","西班牙语","孟加拉语","普通话","韩语","海地克里奥尔语","其他"],
+    contactPref:"首选联系方式 *",
+    call:"语音电话",sms:"短信",both:"两者均可",
+    bestTime:"最佳联系时间",
+    morning:"上午（8–12时）",afternoon:"下午（12–17时）",evening:"傍晚（17–20时）",anytime:"任何时间",
+    consent:"本人同意在洪水预警期间接受 FloodVoice AI 的联系进行安全确认。通话中按 2 将向急救人员发送位置信息。数据仅用于洪水紧急响应。",
+    signature:"签名（请输入全名）*",date:"日期 *",
+    forLiaison:"仅供社区联络员使用",
+    liaisonName:"联络员姓名",liaisonOrg:"所属机构",regDate:"注册日期",
+    neighborhood:"社区 / 试点地点",formId:"表格编号",
+    submitBtn:"提交登记",
+    successTitle:"登记已提交",successBody:"该居民已成功注册 FloodVoice AI 洪水紧急警报。",
+  }
+};
+
+let lang = 'en';
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['en','es','bn','zh'][i] === l);
+  });
+  applyLang();
+}
+
+function applyLang() {
+  const t = T[lang];
+  document.getElementById('app-title').textContent = t.title;
+  document.getElementById('app-sub').textContent = t.sub;
+  document.getElementById('privacy-notice').textContent = t.privacy;
+  document.getElementById('sec1-hdr').textContent = t.s1;
+  document.getElementById('sec2-hdr').textContent = t.s2;
+  document.getElementById('sec3-hdr').textContent = t.s3;
+  document.getElementById('sec4-hdr').textContent = t.s4;
+  document.getElementById('sec5-hdr').textContent = t.s5;
+  document.getElementById('sec6-hdr').textContent = t.s6;
+  document.getElementById('lbl-name').innerHTML = t.name;
+  document.getElementById('lbl-dob').textContent = t.dob;
+  document.getElementById('lbl-phone').innerHTML = t.phone;
+  document.getElementById('lbl-alt-phone').textContent = t.altPhone;
+  document.getElementById('lbl-email').textContent = t.email;
+  document.getElementById('lbl-address').innerHTML = t.address;
+  document.getElementById('lbl-borough').innerHTML = t.borough;
+  document.getElementById('lbl-floor').textContent = t.floor;
+  document.getElementById('lbl-basement').textContent = t.basement;
+  document.getElementById('lbl-household').innerHTML = t.household;
+  document.getElementById('lbl-yes').textContent = t.yes;
+  document.getElementById('lbl-no').textContent = t.no;
+  document.getElementById('lbl-yes2').textContent = t.yes;
+  document.getElementById('lbl-no2').textContent = t.no;
+  document.getElementById('lbl-kin-name').innerHTML = t.kinName;
+  document.getElementById('lbl-kin-phone').innerHTML = t.kinPhone;
+  document.getElementById('lbl-kin-rel').textContent = t.kinRel;
+  document.getElementById('lbl-kin-addr').textContent = t.kinAddr;
+  document.getElementById('lbl-disability').textContent = t.disability;
+  document.getElementById('lbl-disability-desc').textContent = t.disabilityDesc;
+  document.getElementById('lbl-medical').textContent = t.medical;
+  document.getElementById('lbl-language').innerHTML = t.language;
+  document.getElementById('lbl-contact-pref').innerHTML = t.contactPref;
+  document.getElementById('lbl-call').textContent = t.call;
+  document.getElementById('lbl-sms').textContent = t.sms;
+  document.getElementById('lbl-both').textContent = t.both;
+  document.getElementById('lbl-best-time').textContent = t.bestTime;
+  document.getElementById('lbl-morning').textContent = t.morning;
+  document.getElementById('lbl-afternoon').textContent = t.afternoon;
+  document.getElementById('lbl-evening').textContent = t.evening;
+  document.getElementById('lbl-anytime').textContent = t.anytime;
+  document.getElementById('consent-text').textContent = t.consent;
+  document.getElementById('lbl-signature').innerHTML = t.signature;
+  document.getElementById('lbl-date').innerHTML = t.date;
+  document.getElementById('lbl-for-liaison').textContent = t.forLiaison;
+  document.getElementById('lbl-liaison-name').textContent = t.liaisonName;
+  document.getElementById('lbl-liaison-org').textContent = t.liaisonOrg;
+  document.getElementById('lbl-reg-date').textContent = t.regDate;
+  document.getElementById('lbl-neighborhood').textContent = t.neighborhood;
+  document.getElementById('lbl-form-id').textContent = t.formId;
+  document.getElementById('req-note').textContent = t.req;
+  document.getElementById('submit-btn').textContent = t.submitBtn;
+  document.getElementById('success-title').textContent = t.successTitle;
+  document.getElementById('success-body').textContent = t.successBody;
+
+  const lo = document.getElementById('lang-options');
+  lo.innerHTML = '';
+  t.langs.forEach((l,i) => {
+    const lbl = document.createElement('label');
+    lbl.className = 'check-item';
+    lbl.innerHTML = `<input type="checkbox" name="lang_pref" value="${i}"> ${l}`;
+    lo.appendChild(lbl);
+  });
+
+  document.getElementById('f-reg-date').value = new Date().toISOString().split('T')[0];
+}
+
+function toggleDisability(show) {
+  document.getElementById('disability-desc-row').style.display = show ? '' : 'none';
+}
+
+function submitForm() {
+  const t = T[lang];
+  const name = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const address = document.getElementById('f-address').value.trim();
+  const sig = document.getElementById('f-signature').value.trim();
+  if (!name || !phone || !address || !sig) {
+    alert(lang === 'en' ? 'Please complete all required fields (*).' :
+          lang === 'es' ? 'Por favor complete todos los campos obligatorios (*).' :
+          lang === 'bn' ? 'অনুগ্রহ করে সমস্ত প্রয়োজনীয় ক্ষেত্র পূরণ করুন।' :
+          '请填写所有必填项 (*)。');
+    return;
+  }
+  document.getElementById('submit-btn').style.display = 'none';
+  document.getElementById('success-msg').style.display = 'block';
+}
+
+applyLang();
+</script>
+</body>
+</html>
