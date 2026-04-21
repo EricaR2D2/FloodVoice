@@ -1,0 +1,55 @@
+# ── Python / Flask app (not part of Next.js deployment) ──────────────────────
+requirements.txt
+app.py
+config.py
+flood_dashboard.py
+models.py
+demo_flood_posts_generator.py
+fema_flood_data_ingestion.py
+nyc_fvi_data_ingestion.py
+social_media_narrative_integration.py
+generate_prd_pdf.py
+advanced_dashboard_routes.py
+advanced_map_system.py
+choropleth_map_system.py
+forecasting_engine.py
+phase2_pattern_detection.py
+refactored_data_ingestion.py
+ingest_real_emergency_data.py
+ingest_real_tick_disease_data.py
+ingest_real_weather_data.py
+
+# ── Python caches & environments ─────────────────────────────────────────────
+__pycache__/
+.venv/
+venv/
+*.pyc
+*.pyo
+
+# ── SQLite databases ──────────────────────────────────────────────────────────
+*.db
+
+# ── Large data directories ────────────────────────────────────────────────────
+acs_data/
+fvi_data/
+social_media_data/
+fema_data/
+sqlite-tools-win-x64-3500100/
+static/
+templates/
+flood-voice-new/
+
+# ── Misc files not needed for deployment ─────────────────────────────────────
+*.csv
+*.json.bak
+air_quality_data.json
+data_source_report.json
+pattern_analysis_results.csv
+temp_covid_check.csv
+FloodVoice Intake Code.txt
+Flood Voice New PRD -Josue.txt
+FLOODVOICE_BUILD_PLAN.md
+FLOODVOICE_PRD.html
+FLOODVOICE_PRD.md
+presentations/
+documentation/
