@@ -13,11 +13,11 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import { Plus, User, Phone, MapPin, Languages, Activity, Trash2, Edit2, PhoneCall, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getZipPriorityOrder, getNeighborhoodByZip, TIER_CONFIG } from '@/lib/neighborhoods';
+import { ResidentIntakeDialog } from '@/components/resident-intake-dialog';
 
 // ─── Sort helpers ─────────────────────────────────────────────────────────────
 
@@ -61,6 +61,7 @@ export default function ResidentsPage() {
     const [residents, setResidents] = useState<Resident[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
+    const [isIntakeOpen, setIsIntakeOpen] = useState(false);
 
     // Form State
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -235,12 +236,17 @@ export default function ResidentsPage() {
                     </p>
                 </div>
 
+                <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setIsIntakeOpen(true)}>
+                    <Plus className="w-4 h-4" /> Add Resident
+                </Button>
+
+                <ResidentIntakeDialog
+                    open={isIntakeOpen}
+                    onOpenChange={setIsIntakeOpen}
+                    onSaved={fetchResidents}
+                />
+
                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={handleCreateClick}>
-                            <Plus className="w-4 h-4" /> Add Resident
-                        </Button>
-                    </DialogTrigger>
                     <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-lg">
                         <DialogHeader>
                             <DialogTitle>{editingId ? 'Edit Profile' : 'Add New Resident'}</DialogTitle>
